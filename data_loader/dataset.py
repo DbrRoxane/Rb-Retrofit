@@ -9,5 +9,5 @@ class EmbeddingDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        idx = self.dataset[index]
-        return idx, idx
+        idx, emb = self.dataset[index]
+        return idx, emb

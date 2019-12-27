@@ -2,9 +2,12 @@
 from gensim.models import KeyedVectors
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils import data
 from sklearn.model_selection import train_test_split
 import numpy as np
+from poutyne.framework import Experiment, Model
+
 from models.embeddings_combination import CombinePreTrainedEmbs
 from data_loader.utils import create_vocab
 from data_loader.dataset import EmbeddingDataset
@@ -23,49 +26,63 @@ relations_file = ['./data/cnetrellist.txt', './data/wordnetrellist.txt', './data
 
 
 # LOAD DATA
-# 1 get the pre-trained word embedding
+# 1 - get the vocab from pre-trained and aligned
 entity_to_idx = create_vocab(entities_file)
 idx_to_entity = {v: k for k, v in entity_to_idx.items()}
-
 x = list(idx_to_entity.keys())
-y = x.copy()
 
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
-
-params = {'batch_size': 64,
-          'shuffle': True,
-          'num_workers': 6}
-
-training_set = EmbeddingDataset(x_train)
-test_set = EmbeddingDataset(x_test)
-
-training_generator = data.DataLoader(training_set, **params)
-test_generator = data.DataLoader(test_set, **params)
-
-dataloaedr = DataLoader(idx_to_entity.keys(), batch_size=1, shuffle=False, sampler=None,
-           batch_sampler=None, num_workers=0, collate_fn=None,
-           pin_memory=False, drop_last=False, timeout=0,
-           worker_init_fn=None)
-
-#rel_to_idx = create_vocab(relations_file)
-
-lookup_entity = torch.tensor([entity_to_idx["hello"]], dtype=torch.long)
-#lookup_relation = torch.tensor([rel_to_idx["hello"]], dtype=torch.long)
-
-vec_models = []
-weights = []
+# 2 - get the pre-trained vectors
+y = []
 for vec_model_path in pretrained_embs:
     with open(vec_model_path, "r") as file:
-        weight = torch.FloatTensor(np.array([line.strip().split()[1:] for line in file.readlines()]).astype('float64'))
-        vec_models.append(nn.Embedding.from_pretrained(weight))
-        weights.append(weight)
+        weight = np.array([line.strip().split()[1:] for line in file.readlines()]).astype('float64')
+        weight = np.insert(weight, 0, np.random.rand(300), axis=0) # <PAD>
+        weight = np.insert(weight, 1, np.random.rand(300), axis=0) # <UNK>
+        weight = torch.FloatTensor(weight)
+        y.append(weight)
 
-vec_models = torch.cat(weights, dim=1)
+# 3 - concat the vectors from models
+y = torch.cat(y, dim=1)
 
-# 2 PRE-TRAINED WORD EMBEDDING ACCUMULATION
+# 4 - store it in an embedding layer
+y_emb = nn.Embedding.from_pretrained(y)
 
-# X est mon vecteur initialisé au hasard de taille 300
-X = torch.rand(weights[0].shape)
+# 5 - Prepare the data
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+xy_train = list(((idx, emb) for idx, emb in zip(x_train, y_train)))
+xy_test = list(((idx, emb) for idx, emb in zip(x_test, y_test)))
+
+training_set = EmbeddingDataset(xy_train)
+test_set = EmbeddingDataset(xy_test)
+
+params = {'batch_size': 1024,
+          'shuffle': True,
+          'num_workers': 0}
+
+train_generator = data.DataLoader(training_set, **params)
+test_generator = data.DataLoader(test_set, **params)
+
+# 6 - Model parameter
+
+device = 0
+device = torch.device('cuda:%d' % device if torch.cuda.is_available() else 'cpu')
+
+network = CombinePreTrainedEmbs(entity_to_idx, embedding_dim=300, number_models=len(pretrained_embs))
+optimizer = optim.SGD(network.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-3)
+criterion = nn.MSELoss()
+
+epoch = 25
+
+exp = Experiment('./experiment',
+                 network,
+                 device=device,
+                 optimizer=optimizer,
+                 loss_function=criterion)
+
+exp.train(train_generator, test_generator, epochs=epoch)
+
+
 # ÉIl faut que je mélange �a de la mme mani�re entre train, valid, test
 # I just give as input to my forward a word, that it convert into embedding <
 # TODO write forward as  if x is just one word
@@ -76,7 +93,7 @@ X = torch.rand(weights[0].shape)
 # loss_fn = nn.MSELoss(reduction='mean')
 # loss = loss_fn(y, y_hat)
 # mettre eta2 pour weight decay dans l'optimiser
-combine_net = pretrained_embeddings_combination()
+#combine_net = pretrained_embeddings_combination()
 
 
 # 3 get the KG
