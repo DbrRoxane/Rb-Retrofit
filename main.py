@@ -1,10 +1,8 @@
 
-from gensim.models import KeyedVectors
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils import data
-from sklearn.model_selection import train_test_split
 import numpy as np
 from poutyne.framework import Experiment, Model
 
@@ -29,6 +27,8 @@ relations_file = ['./data/cnetrellist.txt', './data/wordnetrellist.txt', './data
 # 1 - get the vocab from pre-trained and aligned
 entity_to_idx = create_vocab(entities_file)
 idx_to_entity = {v: k for k, v in entity_to_idx.items()}
+vocab_size = len(entity_to_idx.keys())
+
 x = list(idx_to_entity.keys())
 
 # 2 - get the pre-trained vectors
@@ -49,19 +49,22 @@ y_emb = nn.Embedding.from_pretrained(y)
 
 # 5 - Prepare the data
 
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
-xy_train = list(((idx, emb) for idx, emb in zip(x_train, y_train)))
-xy_test = list(((idx, emb) for idx, emb in zip(x_test, y_test)))
+xy = list(((idx, emb) for idx, emb in zip(x, y)))
 
-training_set = EmbeddingDataset(xy_train)
-test_set = EmbeddingDataset(xy_test)
+full_dataset = EmbeddingDataset(xy)
+
+train_size, valid_size = int(0.7*vocab_size), int(0.15*vocab_size)
+test_size = vocab_size - train_size - valid_size
+
+train_dataset, valid_dataset, test_dataset = data.random_split(full_dataset, [train_size, valid_size, test_size])
 
 params = {'batch_size': 1024,
           'shuffle': True,
           'num_workers': 0}
 
-train_generator = data.DataLoader(training_set, **params)
-test_generator = data.DataLoader(test_set, **params)
+train_generator = data.DataLoader(train_dataset, **params)
+valid_generator = data.DataLoader(valid_dataset, **params)
+test_generator  = data.DataLoader(test_dataset,  **params)
 
 # 6 - Model parameter
 
@@ -72,15 +75,18 @@ network = CombinePreTrainedEmbs(entity_to_idx, embedding_dim=300, number_models=
 optimizer = optim.SGD(network.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-3)
 criterion = nn.MSELoss()
 
-epoch = 25
+epoch = 35
 
-exp = Experiment('./experiment',
+exp = Experiment('./experiment_3',
                  network,
                  device=device,
                  optimizer=optimizer,
-                 loss_function=criterion)
+                 loss_function=criterion,
+                 batch_metrics=['mse'])
 
-exp.train(train_generator, test_generator, epochs=epoch)
+exp.train(train_generator, valid_generator, epochs=epoch)
+exp.test(test_generator)
+
 
 
 # ÉIl faut que je mélange �a de la mme mani�re entre train, valid, test
