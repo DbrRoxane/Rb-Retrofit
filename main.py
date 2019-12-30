@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -75,7 +74,7 @@ network = CombinePreTrainedEmbs(entity_to_idx, embedding_dim=300, number_models=
 optimizer = optim.SGD(network.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-3)
 criterion = nn.MSELoss()
 
-epoch = 35
+epoch = 45
 
 exp = Experiment('./experiment_3',
                  network,
@@ -99,8 +98,8 @@ exp.test(test_generator)
 # loss_fn = nn.MSELoss(reduction='mean')
 # loss = loss_fn(y, y_hat)
 # mettre eta2 pour weight decay dans l'optimiser
-#combine_net = pretrained_embeddings_combination()
 
+#combine_net = pretrained_embeddings_combination()
 
 # 3 get the KG
 #    triples with entities converted in word embeddings and relations in relation embeddings
