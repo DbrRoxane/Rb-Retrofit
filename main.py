@@ -6,48 +6,20 @@ import numpy as np
 from poutyne.framework import Experiment, Model
 
 from models.embeddings_combination import CombinePreTrainedEmbs
-from data_loader.utils import create_vocab
+from data_loader.utils import create_vocab, load_pretrained
 from data_loader.dataset import EmbeddingDataset
-
-
-# INPUT = pre-trained embedding models AND KG
-# OUTPUT = word embedding updated and relation embeddings
-
-pretrained_embs = ['./data/wgc_w_zip.txt', './data/wgc_g_zip.txt']
-# graphs triplets [e,r,h]  score
-graphs = ['./data/cnet_graph_score.txt', './data/wordnet_graph_score.txt', './data/ppdb_graph_score.txt']
-# liste des mots
-entities_file = './data/vocab_Ins_wgc.txt'
-# listes de relation
-relations_file = ['./data/cnetrellist.txt', './data/wordnetrellist.txt', './data/ppdbrellist.txt']
+import config
 
 
 # LOAD DATA
 # 1 - get the vocab from pre-trained and aligned
-entity_to_idx = create_vocab(entities_file)
+entity_to_idx = create_vocab(config.entities_file)
 idx_to_entity = {v: k for k, v in entity_to_idx.items()}
 vocab_size = len(entity_to_idx.keys())
 
 x = list(idx_to_entity.keys())
-
-# 2 - get the pre-trained vectors
-y = []
-for vec_model_path in pretrained_embs:
-    with open(vec_model_path, "r") as file:
-        weight = np.array([line.strip().split()[1:] for line in file.readlines()]).astype('float64')
-        weight = np.insert(weight, 0, np.random.rand(300), axis=0) # <PAD>
-        weight = np.insert(weight, 1, np.random.rand(300), axis=0) # <UNK>
-        weight = torch.FloatTensor(weight)
-        y.append(weight)
-
-# 3 - concat the vectors from models
-y = torch.cat(y, dim=1)
-
-# 4 - store it in an embedding layer
+y = load_pretrained(config.pretrained_embs)
 y_emb = nn.Embedding.from_pretrained(y)
-
-# 5 - Prepare the data
-
 xy = list(((idx, emb) for idx, emb in zip(x, y)))
 
 full_dataset = EmbeddingDataset(xy)
@@ -57,24 +29,16 @@ test_size = vocab_size - train_size - valid_size
 
 train_dataset, valid_dataset, test_dataset = data.random_split(full_dataset, [train_size, valid_size, test_size])
 
-params = {'batch_size': 1024,
-          'shuffle': True,
-          'num_workers': 0}
+train_generator = data.DataLoader(train_dataset, **config.params_dataset)
+valid_generator = data.DataLoader(valid_dataset, **config.params_dataset)
+test_generator  = data.DataLoader(test_dataset, **config.params_dataset)
 
-train_generator = data.DataLoader(train_dataset, **params)
-valid_generator = data.DataLoader(valid_dataset, **params)
-test_generator  = data.DataLoader(test_dataset,  **params)
+device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-# 6 - Model parameter
-
-device = 0
-device = torch.device('cuda:%d' % device if torch.cuda.is_available() else 'cpu')
-
-network = CombinePreTrainedEmbs(entity_to_idx, embedding_dim=300, number_models=len(pretrained_embs))
-optimizer = optim.SGD(network.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-3)
+network = CombinePreTrainedEmbs(entity_to_idx, **config.params_network)
+optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
 criterion = nn.MSELoss()
 
-epoch = 45
 
 exp = Experiment('./experiment_3',
                  network,
@@ -83,7 +47,7 @@ exp = Experiment('./experiment_3',
                  loss_function=criterion,
                  batch_metrics=['mse'])
 
-exp.train(train_generator, valid_generator, epochs=epoch)
+exp.train(train_generator, valid_generator, epochs=config.epoch)
 exp.test(test_generator)
 
 
