@@ -10,6 +10,7 @@ def create_vocab(vocab_file):
 def load_pretrained(embedding_files):
     import numpy as np
     import torch
+
     y = []
     for vec_model_path in embedding_files:
         with open(vec_model_path, "r") as file:
@@ -20,3 +21,23 @@ def load_pretrained(embedding_files):
             y.append(weight)
     y = torch.cat(y, dim=1)
     return y
+
+
+def prepare_generator(x, y, vocab_size, config):
+    from torch.utils import data
+    from data_loader.dataset import EmbeddingDataset
+
+    xy = list(((idx, emb) for idx, emb in zip(x, y)))
+
+    full_dataset = EmbeddingDataset(xy)
+
+    train_size, valid_size = int(config.train_prop * vocab_size), int(config.valid_prop * vocab_size)
+    test_size = vocab_size - train_size - valid_size
+
+    train_dataset, valid_dataset, test_dataset = data.random_split(full_dataset, [train_size, valid_size, test_size])
+
+    train_generator = data.DataLoader(train_dataset, **config.params_dataset)
+    valid_generator = data.DataLoader(valid_dataset, **config.params_dataset)
+    test_generator = data.DataLoader(test_dataset, **config.params_dataset)
+
+    return train_generator, valid_generator, test_generator
