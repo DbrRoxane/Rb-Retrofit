@@ -7,29 +7,35 @@ from models.embeddings_combination import CombinePreTrainedEmbs
 from data_loader.utils import create_vocab, load_pretrained, prepare_generator
 import config
 
-entity_to_idx = create_vocab(config.entities_file)
-idx_to_entity = {v: k for k, v in entity_to_idx.items()}
-vocab_size = len(entity_to_idx.keys())
 
-x = list(idx_to_entity.keys())
-y = load_pretrained(config.pretrained_embs)
-train_generator, valid_generator, test_generator = prepare_generator(x,y, vocab_size, config)
+def main():
+    entity_to_idx = create_vocab(config.entities_file)
+    idx_to_entity = {v: k for k, v in entity_to_idx.items()}
+    vocab_size = len(entity_to_idx.keys())
 
-device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
+    x = list(idx_to_entity.keys())
+    y = load_pretrained(config.pretrained_embs)
+    train_generator, valid_generator, test_generator = prepare_generator(x,y, vocab_size, config)
 
-network = CombinePreTrainedEmbs(entity_to_idx, **config.params_network)
-optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
-criterion = nn.MSELoss()
+    device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-exp = Experiment(config.dir_experiment,
-                 network,
-                 device=device,
-                 optimizer=optimizer,
-                 loss_function=criterion,
-                 batch_metrics=['mse'])
+    network = CombinePreTrainedEmbs(entity_to_idx, **config.params_network)
+    optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
+    criterion = nn.MSELoss()
 
-exp.train(train_generator, valid_generator, epochs=config.epoch)
-exp.test(test_generator)
+    exp = Experiment(config.dir_experiment,
+                     network,
+                     device=device,
+                     optimizer=optimizer,
+                     loss_function=criterion,
+                     batch_metrics=['mse'])
+
+    exp.train(train_generator, valid_generator, epochs=config.epoch)
+    exp.test(test_generator)
+
+
+if __name__=='__main__':
+    main()
 
 
 
