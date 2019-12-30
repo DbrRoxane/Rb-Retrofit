@@ -1,37 +1,19 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils import data
-import numpy as np
-from poutyne.framework import Experiment, Model
+from poutyne.framework import Experiment
 
 from models.embeddings_combination import CombinePreTrainedEmbs
-from data_loader.utils import create_vocab, load_pretrained
-from data_loader.dataset import EmbeddingDataset
+from data_loader.utils import create_vocab, load_pretrained, prepare_generator
 import config
 
-
-# LOAD DATA
-# 1 - get the vocab from pre-trained and aligned
 entity_to_idx = create_vocab(config.entities_file)
 idx_to_entity = {v: k for k, v in entity_to_idx.items()}
 vocab_size = len(entity_to_idx.keys())
 
 x = list(idx_to_entity.keys())
 y = load_pretrained(config.pretrained_embs)
-y_emb = nn.Embedding.from_pretrained(y)
-xy = list(((idx, emb) for idx, emb in zip(x, y)))
-
-full_dataset = EmbeddingDataset(xy)
-
-train_size, valid_size = int(0.7*vocab_size), int(0.15*vocab_size)
-test_size = vocab_size - train_size - valid_size
-
-train_dataset, valid_dataset, test_dataset = data.random_split(full_dataset, [train_size, valid_size, test_size])
-
-train_generator = data.DataLoader(train_dataset, **config.params_dataset)
-valid_generator = data.DataLoader(valid_dataset, **config.params_dataset)
-test_generator  = data.DataLoader(test_dataset, **config.params_dataset)
+train_generator, valid_generator, test_generator = prepare_generator(x,y, vocab_size, config)
 
 device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
@@ -39,8 +21,7 @@ network = CombinePreTrainedEmbs(entity_to_idx, **config.params_network)
 optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
 criterion = nn.MSELoss()
 
-
-exp = Experiment('./experiment_3',
+exp = Experiment(config.dir_experiment,
                  network,
                  device=device,
                  optimizer=optimizer,

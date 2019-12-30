@@ -4,15 +4,18 @@ entities_file = './data/vocab_Ins_wgc.txt'
 relations_file = ['./data/cnetrellist.txt', './data/wordnetrellist.txt', './data/ppdbrellist.txt']
 
 params_dataset = {'batch_size': 1024,
-          'shuffle': True,
-          'num_workers': 0}
+                  'shuffle': True,
+                  'num_workers': 0}
 
-params_network = {'embedding_dim':300,
-                  'number_models':len(pretrained_embs)}
+train_prop, valid_prop = 0.7, 0.15
 
-params_optimizer = {'lr':1e-2,
-                    'momentum':0.9,
-                    'weight_decay':1e-3}
+params_network = {'embedding_dim': 300,
+                  'number_models': len(pretrained_embs)}
+
+params_optimizer = {'lr': 1e-2,
+                    'momentum': 0.9,
+                    'weight_decay': 1e-3}
 
 device = 0
-epoch = 45
+epoch = 55
+dir_experiment = './experiment_3'
