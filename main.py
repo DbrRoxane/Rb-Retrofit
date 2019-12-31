@@ -5,6 +5,7 @@ from poutyne.framework import Experiment
 
 from models.embeddings_combination import CombinePreTrainedEmbs
 from data_loader.utils import create_vocab, load_pretrained, prepare_generator
+from test_emb.redimensionality_learning import display_emb_evolution
 import config
 
 
@@ -31,26 +32,16 @@ def main():
                      batch_metrics=['mse'])
 
     exp.train(train_generator, valid_generator, epochs=config.epoch)
-    exp.test(test_generator)
+    #exp.test(test_generator)
+
+    display_emb_evolution(idx_to_entity, config.params_network['embedding_dim'], exp, config.epoch)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
 
 
 
-# ÉIl faut que je mélange �a de la mme mani�re entre train, valid, test
-# I just give as input to my forward a word, that it convert into embedding <
-# TODO write forward as  if x is just one word
-# TODO transfoorm in with lookup and themn process
-# input = Y_i initialisé au hasard
-# self.fc1 = nn.Linear(300, 300 * number of models)
-# W = self.fc1(input) -- relu?? sigmoid??
-# loss_fn = nn.MSELoss(reduction='mean')
-# loss = loss_fn(y, y_hat)
-# mettre eta2 pour weight decay dans l'optimiser
-
-#combine_net = pretrained_embeddings_combination()
 
 # 3 get the KG
 #    triples with entities converted in word embeddings and relations in relation embeddings
