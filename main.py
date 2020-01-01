@@ -5,7 +5,7 @@ from poutyne.framework import Experiment
 
 from models.embeddings_combination import CombinePreTrainedEmbs
 from data_loader.utils import create_vocab, load_pretrained, prepare_generator
-from test_emb.redimensionality_learning import display_emb_evolution
+from test_emb.redimensionality_learning import LearningVisualizer
 import config
 
 
@@ -34,7 +34,8 @@ def main():
     exp.train(train_generator, valid_generator, epochs=config.epoch)
     #exp.test(test_generator)
 
-    display_emb_evolution(idx_to_entity, config.params_network['embedding_dim'], exp, config.epoch)
+    learning_visualizer = LearningVisualizer(idx_to_entity, config.params_network['embedding_dim'], exp, config.epoch)
+    learning_visualizer.visualize_learning()
 
 
 if __name__ == '__main__':
