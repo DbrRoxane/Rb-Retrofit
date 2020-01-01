@@ -47,5 +47,5 @@ class LearningVisualizer():
         ax.set_title('Word {0} for features {1}'.format(self.selected_word, self.selected_features))
         ax.set_xlabel('evolution through epochs')
         ax.set_ylabel('feature value')
-        
+
         plt.show()
