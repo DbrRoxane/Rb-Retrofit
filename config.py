@@ -18,4 +18,4 @@ params_optimizer = {'lr': 1e-2,
 
 device = 0
 epoch = 55
-dir_experiment = './experiment_3'
+dir_experiment = './experiment_5'

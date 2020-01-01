@@ -2,13 +2,12 @@ import torch.nn as nn
 
 
 class CombinePreTrainedEmbs(nn.Module):
-    def __init__(self, word_to_idx, embedding_dim, number_models):
+    def __init__(self, vocab_size, embedding_dim, number_models):
         super(CombinePreTrainedEmbs, self).__init__()
-        self.combined = nn.Embedding(len(word_to_idx), embedding_dim, padding_idx=0)
-        self.combined.weight.data.uniform_(-2, 2)
-        self.fc = nn.Linear(embedding_dim, number_models*embedding_dim)
+        self.encode = nn.Linear(vocab_size, embedding_dim)
+        self.decode = nn.Linear(embedding_dim, number_models*embedding_dim)
 
     def forward(self, x):
-        combined = self.combined(x)
-        original_refined = self.fc(combined)
+        encoded = self.encode(x.float())
+        original_refined = self.decode(encoded)
         return original_refined

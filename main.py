@@ -15,11 +15,11 @@ def main():
 
     x = list(idx_to_entity.keys())
     y = load_pretrained(config.pretrained_embs)
-    train_generator, valid_generator, test_generator = prepare_generator(x,y, vocab_size, config)
+    train_generator, valid_generator, test_generator = prepare_generator(x, y, vocab_size, config)
 
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-    network = CombinePreTrainedEmbs(entity_to_idx, **config.params_network)
+    network = CombinePreTrainedEmbs(len(entity_to_idx.keys()), **config.params_network)
     optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
     criterion = nn.MSELoss()
 
