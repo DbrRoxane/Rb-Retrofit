@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
+from data_loader.utils import get_one_hot
 
 
 class LearningVisualizer():
@@ -15,7 +16,9 @@ class LearningVisualizer():
         self.recorded_epoch = self.get_recorded_epoch(last_epoch)
 
     def select_random_word(self, nb_words=1):
-        return torch.tensor(np.random.choice(list(self.idx_to_word.keys()), nb_words)[0])
+        idx = torch.tensor(np.random.choice(list(self.idx_to_word.keys()), nb_words)[0])
+        one_hot = torch.tensor(get_one_hot(idx, len(self.idx_to_word))).float()
+        return one_hot
 
     def select_random_features(self, nb_features=5):
         return np.random.randint(low=0, high=self.dim_embedding, size=nb_features)
@@ -25,7 +28,7 @@ class LearningVisualizer():
             self.experiment.load_checkpoint(epoch)
             for feature in self.selected_features:
                 self.feature_evolution[feature].append(
-                    float(self.experiment.model.model.combined(self.selected_word)[feature]))
+                    float(self.experiment.model.model.encode(self.selected_word)[feature]))
 
     def get_recorded_epoch(self, last_epoch):
         recorded_epoch = []

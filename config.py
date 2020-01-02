@@ -17,5 +17,5 @@ params_optimizer = {'lr': 1e-1,
                     'weight_decay': 1e-1}
 
 device = 0
-epoch = 10
+epoch = 25
 dir_experiment = './experiment_5'

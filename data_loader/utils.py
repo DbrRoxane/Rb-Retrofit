@@ -41,3 +41,11 @@ def prepare_generator(x, y, vocab_size, config):
     test_generator = data.DataLoader(test_dataset, **config.params_dataset)
 
     return train_generator, valid_generator, test_generator
+
+
+def get_one_hot(idx, vocab_size):
+    import numpy as np
+
+    one_hot = np.zeros(vocab_size)
+    one_hot[idx] = 1
+    return one_hot
