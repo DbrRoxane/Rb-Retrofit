@@ -12,9 +12,9 @@ train_prop, valid_prop = 0.7, 0.15
 params_network = {'embedding_dim': 300,
                   'number_models': len(pretrained_embs)}
 
-params_optimizer = {'lr': 1e-2,
+params_optimizer = {'lr': 1e-1,
                     'momentum': 0.9,
-                    'weight_decay': 1e-3}
+                    'weight_decay': 1e-1}
 
 device = 0
 epoch = 10
