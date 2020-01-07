@@ -4,7 +4,7 @@ import numpy as np
 from data_loader.utils import get_one_hot
 
 
-class LearningVisualizer():
+class LearningVisualizer:
     def __init__(self, idx_to_word, dim_embedding, experiment, last_epoch):
         self.idx_to_word= idx_to_word
         self.dim_embedding = dim_embedding
@@ -20,7 +20,7 @@ class LearningVisualizer():
         one_hot = torch.tensor(get_one_hot(idx, len(self.idx_to_word))).float()
         return one_hot
 
-    def select_random_features(self, nb_features=5):
+    def select_random_features(self, nb_features=10):
         return np.random.randint(low=0, high=self.dim_embedding, size=nb_features)
 
     def generate_data_evolution(self):
@@ -32,7 +32,7 @@ class LearningVisualizer():
 
     def get_recorded_epoch(self, last_epoch):
         recorded_epoch = []
-        for epoch in range(last_epoch):
+        for epoch in range(1, last_epoch+1):
             try:
                 self.experiment.load_checkpoint(epoch)
                 recorded_epoch.append(epoch)
@@ -52,3 +52,4 @@ class LearningVisualizer():
         ax.set_ylabel('feature value')
 
         plt.show()
+

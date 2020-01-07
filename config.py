@@ -1,5 +1,5 @@
-pretrained_embs = ['./data/wgc_w_zip.txt', './data/wgc_g_zip.txt']
-graphs = ['./data/cnet_graph_score.txt', './data/wordnet_graph_score.txt', './data/ppdb_graph_score.txt']
+pretrained_embs =  ['./data/crawl-300d-2M.vec'] # ['./data/wgc_g_zip.txt'] ['./data/wgc_w_zip.txt'] #,
+graphs = ['./data/cn_relations_orig.txt'] #['./data/cnet_graph_score.txt', './data/wordnet_graph_score.txt', './data/ppdb_graph_score.txt']
 entities_file = './data/vocab_Ins_wgc.txt'
 relations_file = ['./data/cnetrellist.txt', './data/wordnetrellist.txt', './data/ppdbrellist.txt']
 
@@ -17,5 +17,6 @@ params_optimizer = {'lr': 1e-1,
                     'weight_decay': 1e-1}
 
 device = 0
-epoch = 25
-dir_experiment = './experiment_5'
+epoch = 2
+dir_experiment = './experiment_9'
+nb_false = 5

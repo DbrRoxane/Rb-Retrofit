@@ -8,6 +8,6 @@ class CombinePreTrainedEmbs(nn.Module):
         self.decode = nn.Linear(embedding_dim, number_models*embedding_dim)
 
     def forward(self, x):
-        encoded = self.encode(x)
+        encoded = self.encode(x.float())
         original_refined = self.decode(encoded)
         return original_refined

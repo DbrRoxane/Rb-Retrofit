@@ -8,19 +8,36 @@ def create_vocab(vocab_file):
 
 
 def load_pretrained(embedding_files):
-    import numpy as np
-    import torch
 
-    y = []
-    for vec_model_path in embedding_files:
-        with open(vec_model_path, "r") as file:
-            weight = np.array([line.strip().split()[1:] for line in file.readlines()]).astype('float64')
-            weight = np.insert(weight, 0, np.random.rand(300), axis=0)  # <PAD>
-            weight = np.insert(weight, 1, np.random.rand(300), axis=0)  # <UNK>
-            weight = torch.FloatTensor(weight)
-            y.append(weight)
-    y = torch.cat(y, dim=1)
-    return y
+    from gensim.models import KeyedVectors
+    import torch
+    import torch.nn as nn
+
+    vec_model = KeyedVectors.load_word2vec_format(embedding_files)
+    weights = torch.FloatTensor(vec_model.vectors)
+    embedding = nn.Embedding.from_pretrained(weights)
+
+    return embedding
+
+
+def load_graph(graph_file, word_to_idx, rel_to_idx=None):
+    triples = []
+    cnt_all, cnt_ok = 0, 0
+    with open(graph_file, "r") as f:
+        for triple in f.readlines():
+            cnt_all += 1
+            triple = triple.strip().split('  ,  ')
+            if len(triple) == 3:
+                head_word, rel_word, tail_word = triple
+            else:
+                continue
+            head_idx, tail_idx = word_to_idx.get(head_word, False), word_to_idx.get(tail_word, False) # 1 is UNK
+            if head_idx and tail_idx:
+                #rel_idx = rel_to_idx.get(rel_word, 1)
+                cnt_ok += 1
+                triples.append({'head': head_idx, 'rel': None, 'tail': tail_idx})
+    print(cnt_all, cnt_ok)
+    return triples
 
 
 def prepare_generator(x, y, vocab_size, config):
@@ -43,9 +60,28 @@ def prepare_generator(x, y, vocab_size, config):
     return train_generator, valid_generator, test_generator
 
 
+def prepare_generator_graph(x, nb_false):
+    from torch.utils import data
+    from data_loader.dataset import TriplesDataset
+    import config
+
+    dataset = TriplesDataset(x, nb_false)
+    train_size, valid_size = int(config.train_prop * len(x)), int(config.valid_prop * len(x))
+    test_size = len(x) - train_size - valid_size
+
+    train_dataset, valid_dataset, test_dataset = data.random_split(dataset, [train_size, valid_size, test_size])
+
+    train_generator = data.DataLoader(train_dataset, **config.params_dataset)
+    valid_generator = data.DataLoader(valid_dataset, **config.params_dataset)
+    test_generator = data.DataLoader(test_dataset, **config.params_dataset)
+
+    return train_generator, valid_generator, test_generator
+
+
 def get_one_hot(idx, vocab_size):
     import numpy as np
+    import torch
 
     one_hot = np.zeros(vocab_size)
     one_hot[idx] = 1
-    return one_hot
+    return torch.tensor(one_hot).float()

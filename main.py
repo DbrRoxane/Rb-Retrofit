@@ -4,23 +4,28 @@ import torch.optim as optim
 from poutyne.framework import Experiment
 
 from models.embeddings_combination import CombinePreTrainedEmbs
-from data_loader.utils import create_vocab, load_pretrained, prepare_generator
+from data_loader.utils import create_vocab, load_graph, prepare_generator_graph
 from test_emb.redimensionality_learning import LearningVisualizer
 import config
 
 
 def main():
     entity_to_idx = create_vocab(config.entities_file)
+    #relation_to_idx = create_vocab(config.)
     idx_to_entity = {v: k for k, v in entity_to_idx.items()}
     vocab_size = len(entity_to_idx.keys())
 
-    x = list(idx_to_entity.keys())
-    y = load_pretrained(config.pretrained_embs)
-    train_generator, valid_generator, test_generator = prepare_generator(x, y, vocab_size, config)
+    #x = list(idx_to_entity.keys())
+    #y = load_pretrained(config.pretrained_embs)
+    #train_generator, valid_generator, test_generator = prepare_generator(x, y, vocab_size, config)
+
+    x = load_graph(config.graphs[0], entity_to_idx)
+    train_generator, valid_generator, test_generator = prepare_generator_graph(x, config.nb_false)
 
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-    network = CombinePreTrainedEmbs(len(entity_to_idx.keys()), **config.params_network)
+    """
+    network = CombinePreTrainedEmbs(vocab_size, **config.params_network)
     optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
     criterion = nn.MSELoss()
 
@@ -35,7 +40,9 @@ def main():
     exp.test(test_generator)
 
     learning_visualizer = LearningVisualizer(idx_to_entity, config.params_network['embedding_dim'], exp, config.epoch)
-    learning_visualizer.visualize_learning()
+    learning_visualizer.visualize_learning()"""
+
+
 
 
 if __name__ == '__main__':
