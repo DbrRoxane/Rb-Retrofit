@@ -11,13 +11,18 @@ import config
 
 
 def main():
-    vec_model = KeyedVectors.load_word2vec_format(config.pretrained_embs[0])
+    vec_model = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
+    print("Breakpoint 1")
     weights = torch.FloatTensor(vec_model.vectors)
     embedding = nn.Embedding.from_pretrained(weights)
 
+    print("Breakpoint 2")
     x = load_graph(config.graphs[0], vec_model)
+
+    print("Breakpoint 3")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
 
+    print("Breakpoint 4")
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
     network = Retrofit(embedding)
@@ -37,23 +42,10 @@ def main():
 
     """
     network = CombinePreTrainedEmbs(vocab_size, **config.params_network)
-    optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
-    criterion = nn.MSELoss()
 
-    exp = Experiment(config.dir_experiment,
-                     network,
-                     device=device,
-                     optimizer=optimizer,
-                     loss_function=criterion,
-                     batch_metrics=['mse'])
-
-    exp.train(train_generator, valid_generator, epochs=config.epoch)
-    exp.test(test_generator)
 
     learning_visualizer = LearningVisualizer(idx_to_entity, config.params_network['embedding_dim'], exp, config.epoch)
     learning_visualizer.visualize_learning()"""
-
-
 
 
 if __name__ == '__main__':

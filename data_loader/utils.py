@@ -22,6 +22,7 @@ def load_pretrained(embedding_files):
 
 def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=5):
     triples = []
+    vocab_size = len(vec_model.index2word)
     with open(graph_file, "r") as f:
         for triple in f.readlines():
             triple = triple.strip().split('  ,  ')
@@ -33,17 +34,17 @@ def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=5):
             triple = ({'head': head_word, 'rel': None, 'tail': tail_word}, 1) # 1 car positive
             triples.append(triple)
             for neg in range(neg_sample):
-                triples.append((generate_negative_sample(triple, vec_model), 0))
+                triples.append((generate_negative_sample(triple, vocab_size, vec_model), 0))
     return triples
 
 
-def generate_negative_sample(true_fact, vec_model):
+def generate_negative_sample(true_fact, vocab_size, vec_model):
     import random
     head_or_tail = random.getrandbits(1)
-    rand_word_vector = random.choice(list(vec_model.vocab.keys()))
+    rand_word_idx = random.randint(0, vocab_size-1)
     if head_or_tail:
-        return {'head': rand_word_vector, 'rel': true_fact[0]['rel'], 'tail': true_fact[0]['tail']}
-    return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': rand_word_vector}
+        return {'head': vec_model.index2word[rand_word_idx], 'rel': true_fact[0]['rel'], 'tail': true_fact[0]['tail']}
+    return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': vec_model.index2word[rand_word_idx]}
 
 
 def prepare_generator(x, y, vocab_size, config):
