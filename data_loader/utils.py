@@ -20,12 +20,11 @@ def load_pretrained(embedding_files):
     return embedding
 
 
-def load_graph(graph_file, word_to_idx, rel_to_idx=None):
+def load_graph(graph_file, word_to_idx, rel_to_idx=None, neg_sample=5):
     triples = []
-    cnt_all, cnt_ok = 0, 0
+    vocab_size = len(word_to_idx)
     with open(graph_file, "r") as f:
         for triple in f.readlines():
-            cnt_all += 1
             triple = triple.strip().split('  ,  ')
             if len(triple) == 3:
                 head_word, rel_word, tail_word = triple
@@ -34,10 +33,20 @@ def load_graph(graph_file, word_to_idx, rel_to_idx=None):
             head_idx, tail_idx = word_to_idx.get(head_word, False), word_to_idx.get(tail_word, False) # 1 is UNK
             if head_idx and tail_idx:
                 #rel_idx = rel_to_idx.get(rel_word, 1)
-                cnt_ok += 1
-                triples.append({'head': head_idx, 'rel': None, 'tail': tail_idx})
-    print(cnt_all, cnt_ok)
+                triple = ({'head': head_idx, 'rel': None, 'tail': tail_idx}, 1) # 1 car positive
+                triples.append(triple)
+                for neg in range(neg_sample):
+                    triples.append((generate_negative_sample(triple, vocab_size), 0))
     return triples
+
+
+def generate_negative_sample(true_fact, vocab_size):
+    import random
+    head_or_tail = random.getrandbits(1)
+    word_idx = random.randint(0, vocab_size)
+    if head_or_tail:
+        return {'head': word_idx, 'rel': true_fact[0]['rel'], 'tail': true_fact[0]['tail']}
+    return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': word_idx}
 
 
 def prepare_generator(x, y, vocab_size, config):
@@ -60,12 +69,12 @@ def prepare_generator(x, y, vocab_size, config):
     return train_generator, valid_generator, test_generator
 
 
-def prepare_generator_graph(x, nb_false):
+def prepare_generator_graph(x):
     from torch.utils import data
     from data_loader.dataset import TriplesDataset
     import config
 
-    dataset = TriplesDataset(x, nb_false)
+    dataset = TriplesDataset(x)
     train_size, valid_size = int(config.train_prop * len(x)), int(config.valid_prop * len(x))
     test_size = len(x) - train_size - valid_size
 

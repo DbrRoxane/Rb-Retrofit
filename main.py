@@ -20,7 +20,7 @@ def main():
     #train_generator, valid_generator, test_generator = prepare_generator(x, y, vocab_size, config)
 
     x = load_graph(config.graphs[0], entity_to_idx)
-    train_generator, valid_generator, test_generator = prepare_generator_graph(x, config.nb_false)
+    train_generator, valid_generator, test_generator = prepare_generator_graph(x)
 
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
