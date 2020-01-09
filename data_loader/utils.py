@@ -20,33 +20,30 @@ def load_pretrained(embedding_files):
     return embedding
 
 
-def load_graph(graph_file, word_to_idx, rel_to_idx=None, neg_sample=5):
+def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=5):
     triples = []
-    vocab_size = len(word_to_idx)
     with open(graph_file, "r") as f:
         for triple in f.readlines():
             triple = triple.strip().split('  ,  ')
             if len(triple) == 3:
-                head_word, rel_word, tail_word = triple
+                head_word = triple[0] if triple[0] else 'UNK'
+                tail_word = triple[2] if triple[2] else 'UNK'
             else:
                 continue
-            head_idx, tail_idx = word_to_idx.get(head_word, False), word_to_idx.get(tail_word, False) # 1 is UNK
-            if head_idx and tail_idx:
-                #rel_idx = rel_to_idx.get(rel_word, 1)
-                triple = ({'head': head_idx, 'rel': None, 'tail': tail_idx}, 1) # 1 car positive
-                triples.append(triple)
-                for neg in range(neg_sample):
-                    triples.append((generate_negative_sample(triple, vocab_size), 0))
+            triple = ({'head': head_word, 'rel': None, 'tail': tail_word}, 1) # 1 car positive
+            triples.append(triple)
+            for neg in range(neg_sample):
+                triples.append((generate_negative_sample(triple, vec_model), 0))
     return triples
 
 
-def generate_negative_sample(true_fact, vocab_size):
+def generate_negative_sample(true_fact, vec_model):
     import random
     head_or_tail = random.getrandbits(1)
-    word_idx = random.randint(0, vocab_size)
+    rand_word_vector = random.choice(list(vec_model.vocab.keys()))
     if head_or_tail:
-        return {'head': word_idx, 'rel': true_fact[0]['rel'], 'tail': true_fact[0]['tail']}
-    return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': word_idx}
+        return {'head': rand_word_vector, 'rel': true_fact[0]['rel'], 'tail': true_fact[0]['tail']}
+    return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': rand_word_vector}
 
 
 def prepare_generator(x, y, vocab_size, config):
@@ -71,7 +68,7 @@ def prepare_generator(x, y, vocab_size, config):
 
 def prepare_generator_graph(x):
     from torch.utils import data
-    from data_loader.dataset import TriplesDataset
+    from data_loader.triples_dataset import TriplesDataset
     import config
 
     dataset = TriplesDataset(x)

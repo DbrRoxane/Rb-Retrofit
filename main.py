@@ -1,28 +1,39 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from gensim.models import KeyedVectors
 from poutyne.framework import Experiment
 
-from models.embeddings_combination import CombinePreTrainedEmbs
+from models.simple_embedding_layer import EmbeddingLayer
+from models.retrofitting import Retrofit
 from data_loader.utils import create_vocab, load_graph, prepare_generator_graph
-from test_emb.redimensionality_learning import LearningVisualizer
 import config
 
 
 def main():
-    entity_to_idx = create_vocab(config.entities_file)
-    #relation_to_idx = create_vocab(config.)
-    idx_to_entity = {v: k for k, v in entity_to_idx.items()}
-    vocab_size = len(entity_to_idx.keys())
+    vec_model = KeyedVectors.load_word2vec_format(config.pretrained_embs[0])
+    weights = torch.FloatTensor(vec_model.vectors)
+    embedding = nn.Embedding.from_pretrained(weights)
 
-    #x = list(idx_to_entity.keys())
-    #y = load_pretrained(config.pretrained_embs)
-    #train_generator, valid_generator, test_generator = prepare_generator(x, y, vocab_size, config)
-
-    x = load_graph(config.graphs[0], entity_to_idx)
+    x = load_graph(config.graphs[0], vec_model)
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
 
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
+
+    network = Retrofit(embedding)
+    optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
+    criterion = nn.MSELoss()
+
+    exp = Experiment(config.dir_experiment,
+                     network,
+                     device=device,
+                     optimizer=optimizer,
+                     loss_function=criterion,
+                     batch_metrics=['mse'])
+
+    exp.train(train_generator, valid_generator, epochs=config.epoch)
+    exp.test(test_generator)
+
 
     """
     network = CombinePreTrainedEmbs(vocab_size, **config.params_network)
