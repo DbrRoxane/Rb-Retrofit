@@ -6,18 +6,18 @@ from poutyne.framework import Experiment
 
 from models.simple_embedding_layer import EmbeddingLayer
 from models.retrofitting import Retrofit
-from data_loader.utils import create_vocab, load_graph, prepare_generator_graph
+from data_loader.utils import load_graph, prepare_generator_graph, set_word_to_idx
 import config
 
 
 def main():
     vec_model = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
+    word_to_idx = set_word_to_idx(vec_model)
     print("Breakpoint 1")
-    weights = torch.FloatTensor(vec_model.vectors)
-    embedding = nn.Embedding.from_pretrained(weights)
+
 
     print("Breakpoint 2")
-    x = load_graph(config.graphs[0], vec_model)
+    x = load_graph(config.graphs[0], vec_model, word_to_idx)
 
     print("Breakpoint 3")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
@@ -25,7 +25,7 @@ def main():
     print("Breakpoint 4")
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-    network = Retrofit(embedding)
+    network = Retrofit(vec_model)
     optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
     criterion = nn.MSELoss()
 

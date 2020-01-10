@@ -7,6 +7,12 @@ def create_vocab(vocab_file):
     return word_to_idx
 
 
+def set_word_to_idx(vec_model):
+    import torch
+    word_to_idx = {w: torch.tensor(i, dtype=torch.long) for i, w in enumerate(vec_model.index2word)}
+    return word_to_idx
+
+
 def load_pretrained(embedding_files):
 
     from gensim.models import KeyedVectors
@@ -20,31 +26,33 @@ def load_pretrained(embedding_files):
     return embedding
 
 
-def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=5):
+def load_graph(graph_file, vec_model, word_to_idx, rel_to_idx=None, neg_sample=1):
+    import torch
     triples = []
     vocab_size = len(vec_model.index2word)
     with open(graph_file, "r") as f:
         for triple in f.readlines():
             triple = triple.strip().split('  ,  ')
             if len(triple) == 3:
-                head_word = triple[0] if triple[0] else 'UNK'
-                tail_word = triple[2] if triple[2] else 'UNK'
+                head_idx = word_to_idx.get(triple[0], torch.tensor(1, dtype=torch.long)) if triple[0] else 'UNK'
+                tail_idx = word_to_idx.get(triple[2], torch.tensor(1, dtype=torch.long)) if triple[2] else 'UNK'
             else:
                 continue
-            triple = ({'head': head_word, 'rel': None, 'tail': tail_word}, 1) # 1 car positive
+            triple = ({'head': head_idx, 'rel': torch.tensor(0), 'tail': tail_idx}, torch.tensor(1, dtype=torch.float)) # 1 car positive
             triples.append(triple)
             for neg in range(neg_sample):
-                triples.append((generate_negative_sample(triple, vocab_size, vec_model), 0))
+                triples.append((generate_negative_sample(triple, vocab_size), torch.tensor(0, dtype=torch.float)))
     return triples
 
 
-def generate_negative_sample(true_fact, vocab_size, vec_model):
+def generate_negative_sample(true_fact, vocab_size):
+    import torch
     import random
     head_or_tail = random.getrandbits(1)
-    rand_word_idx = random.randint(0, vocab_size-1)
+    rand_word_idx = torch.tensor(random.randint(0, vocab_size-1), dtype=torch.long)
     if head_or_tail:
-        return {'head': vec_model.index2word[rand_word_idx], 'rel': true_fact[0]['rel'], 'tail': true_fact[0]['tail']}
-    return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': vec_model.index2word[rand_word_idx]}
+        return {'head': rand_word_idx, 'rel': true_fact[0]['rel'], 'tail': true_fact[0]['tail']}
+    return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': rand_word_idx}
 
 
 def prepare_generator(x, y, vocab_size, config):
