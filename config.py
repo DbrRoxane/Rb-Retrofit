@@ -18,7 +18,7 @@ params_optimizer = {'lr': 1e-3,
                     'weight_decay': 1e-2}
 
 device = 0
-epoch = 2
-dir_experiment = './experiment/experiment_retrofit_no_neg_1'
+epoch = 10
+dir_experiment = './experiment/experiment_retrofit_no_neg_2'
 embedding_dim = 300
 nb_false = 0

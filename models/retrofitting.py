@@ -18,6 +18,6 @@ class Retrofit(nn.Module):
     def forward(self, x):
         head_embedding = self.embedding(x['head'])
         tail_embedding = self.embedding(x['tail'])
-        distance = torch.norm(head_embedding - tail_embedding, 2)
+        distance = torch.norm(head_embedding - tail_embedding, 2, 1)
         return distance
 

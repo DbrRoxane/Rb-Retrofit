@@ -4,10 +4,11 @@ import torch.optim as optim
 from gensim.models import KeyedVectors
 from poutyne.framework import Experiment
 
-from models.simple_embedding_layer import EmbeddingLayer
 from models.retrofitting import Retrofit
 from data_loader.utils import load_graph, prepare_generator_graph, set_word_to_idx
 import config
+from evaluation.similarity import men_evaluation
+from evaluation.test_emb.redimensionality_learning import LearningVisualizer
 
 
 def main():
@@ -15,14 +16,12 @@ def main():
     word_to_idx = set_word_to_idx(vec_model)
     print("Breakpoint 1")
 
-
-    print("Breakpoint 2")
     x = load_graph(config.graphs[0], vec_model, word_to_idx)
 
-    print("Breakpoint 3")
+    print("Breakpoint 2")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
 
-    print("Breakpoint 4")
+    print("Breakpoint 3")
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
     network = Retrofit(vec_model)
@@ -39,13 +38,27 @@ def main():
     exp.train(train_generator, valid_generator, epochs=config.epoch)
     exp.test(test_generator)
 
+    learning_visualizer = LearningVisualizer(exp, config.epoch)
+    learning_visualizer.visualize_learning()
 
-    """
-    network = CombinePreTrainedEmbs(vocab_size, **config.params_network)
+    exp.load_checkpoint(8)
+    exp.model.model.embedding.weight.requires_grad = False
 
 
-    learning_visualizer = LearningVisualizer(idx_to_entity, config.params_network['embedding_dim'], exp, config.epoch)
-    learning_visualizer.visualize_learning()"""
+
+    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test',
+                         word_to_idx,
+                         exp.model.model.embedding))
+
+    vec_model2 = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
+    original_weights = torch.FloatTensor(vec_model2.vectors)
+    original_embs = nn.Embedding.from_pretrained(original_weights)
+    original_embs.weight.requires_grad = False
+
+
+    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', word_to_idx, original_embs))
+
+
 
 
 if __name__ == '__main__':

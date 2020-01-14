@@ -34,8 +34,8 @@ def load_graph(graph_file, vec_model, word_to_idx, rel_to_idx=None, neg_sample=1
         for triple in f.readlines():
             triple = triple.strip().split('  ,  ')
             if len(triple) == 3:
-                head_idx = word_to_idx.get(triple[0], torch.tensor(1, dtype=torch.long)) if triple[0] else 'UNK'
-                tail_idx = word_to_idx.get(triple[2], torch.tensor(1, dtype=torch.long)) if triple[2] else 'UNK'
+                head_idx = word_to_idx.get(triple[0], torch.tensor(1, dtype=torch.long)) #if triple[0] else 'UNK'
+                tail_idx = word_to_idx.get(triple[2], torch.tensor(1, dtype=torch.long)) #if triple[2] else 'UNK'
             else:
                 continue
             triple = ({'head': head_idx, 'rel': torch.tensor(0), 'tail': tail_idx}, torch.tensor(1, dtype=torch.float)) # 1 car positive
