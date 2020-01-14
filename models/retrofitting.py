@@ -14,10 +14,11 @@ class Retrofit(nn.Module):
         weights = torch.FloatTensor(vec_model.vectors)
         self.embedding = nn.Embedding.from_pretrained(weights)
         self.embedding.weight.requires_grad = True
+        self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
     def forward(self, x):
         head_embedding = self.embedding(x['head'])
         tail_embedding = self.embedding(x['tail'])
-        distance = torch.norm(head_embedding - tail_embedding, 2)
-        return distance
+        cosine_similarity = self.cos(head_embedding, tail_embedding)
+        return cosine_similarity
 
