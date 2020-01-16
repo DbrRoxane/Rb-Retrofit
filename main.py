@@ -13,10 +13,16 @@ from evaluation.test_emb.redimensionality_learning import LearningVisualizer
 
 def main():
     vec_model = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
+
+    vec_model_initial = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
+    original_weights = torch.FloatTensor(vec_model_initial.vectors)
+    original_embs = nn.Embedding.from_pretrained(original_weights)
+    original_embs.weight.requires_grad = False
+
     word_to_idx = set_word_to_idx(vec_model)
     print("Breakpoint 1")
 
-    x = load_graph(config.graphs[0], vec_model, word_to_idx)
+    x = load_graph(config.graphs[0], vec_model, vec_model_initial, word_to_idx)
 
     print("Breakpoint 2")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
@@ -26,13 +32,12 @@ def main():
 
     network = Retrofit(vec_model)
     optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
-    criterion = nn.MSELoss()
 
     exp = Experiment(config.dir_experiment,
                      network,
                      device=device,
                      optimizer=optimizer,
-                     loss_function=criterion,
+                     loss_function=None,
                      batch_metrics=['mse'])
 
     exp.train(train_generator, valid_generator, epochs=config.epoch)
@@ -41,24 +46,16 @@ def main():
     learning_visualizer = LearningVisualizer(exp, config.epoch)
     learning_visualizer.visualize_learning()
 
-    exp.load_checkpoint(8)
+    exp._load_best_checkpoint()
     exp.model.model.embedding.weight.requires_grad = False
-
-
 
     print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test',
                          word_to_idx,
                          exp.model.model.embedding))
 
-    vec_model2 = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
-    original_weights = torch.FloatTensor(vec_model2.vectors)
-    original_embs = nn.Embedding.from_pretrained(original_weights)
-    original_embs.weight.requires_grad = False
 
 
     print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', word_to_idx, original_embs))
-
-
 
 
 if __name__ == '__main__':

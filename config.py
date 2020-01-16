@@ -19,6 +19,6 @@ params_optimizer = {'lr': 1e-3,
 
 device = 0
 epoch = 4
-dir_experiment = './experiment/experiment_retrofit_neg_cosine_1'
+dir_experiment = './experiment/experiment_retrofit_no_neg_cosine_2'
 embedding_dim = 300
-nb_false = 2
+nb_false = 0

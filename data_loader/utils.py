@@ -26,7 +26,7 @@ def load_pretrained(embedding_files):
     return embedding
 
 
-def load_graph(graph_file, vec_model, word_to_idx, rel_to_idx=None, neg_sample=1):
+def load_graph(graph_file, vec_model, vec_model_initial, word_to_idx, rel_to_idx=None, neg_sample=1):
     import torch
     triples = []
     vocab_size = len(vec_model.index2word)
@@ -38,10 +38,10 @@ def load_graph(graph_file, vec_model, word_to_idx, rel_to_idx=None, neg_sample=1
                 tail_idx = word_to_idx.get(triple[2], torch.tensor(1, dtype=torch.long)) #if triple[2] else 'UNK'
             else:
                 continue
-            triple = ({'head': head_idx, 'rel': torch.tensor(0), 'tail': tail_idx}, torch.tensor(1, dtype=torch.float)) # 1 car positive
+            triple = ({'head': head_idx, 'rel': torch.tensor(0), 'tail': tail_idx}, vec_model_initial) # 1 car positive
             triples.append(triple)
             for neg in range(neg_sample):
-                triples.append((generate_negative_sample(triple, vocab_size), torch.tensor(0, dtype=torch.float)))
+                triples.append((generate_negative_sample(triple, vocab_size), torch.tensor(-1, dtype=torch.float)))
     return triples
 
 

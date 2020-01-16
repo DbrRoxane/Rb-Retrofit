@@ -19,6 +19,14 @@ class Retrofit(nn.Module):
     def forward(self, x):
         head_embedding = self.embedding(x['head'])
         tail_embedding = self.embedding(x['tail'])
-        cosine_similarity = self.cos(head_embedding, tail_embedding)
-        return cosine_similarity
+        return head_embedding, tail_embedding
 
+    def loss_function(self, prediction, target):
+        head_pred, tail_pred = prediction
+        head_target, tail_target = target(
+            ux a
+        )
+        distance_pairs = 1 - self.cos(head_pred, tail_pred)
+        distance_initial_head = 1 - self.cos(head_pred, head_target)
+        distance_initial_tail = 1 - self.cos(tail_pred, tail_target)
+        return distance_pairs + distance_initial_head/2. + distance_initial_tail/2.
