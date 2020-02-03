@@ -27,9 +27,11 @@ def cosine_similarity(word_vector_1, word_vector_2):
 def men_evaluation(filename, word_to_idx, embedding):
     from scipy.stats import spearmanr
     import numpy as np
+
     gold_scores, computed_scores = [], []
     for term_1, term_2, gold_score in read_men3000(filename):
         idx_1, idx_2 = word_to_idx.get(term_1, torch.tensor(1)), word_to_idx.get(term_2, torch.tensor(1))
+        idx_1, idx_2 = idx_1.to("cuda"), idx_2.to("cuda")
         vector_1, vector_2 = embedding(idx_1), embedding(idx_2)
         computed_score = cosine_similarity(vector_1, vector_2)
         gold_scores.append(gold_score)

@@ -9,7 +9,7 @@ def create_vocab(vocab_file):
 
 def set_word_to_idx(vec_model):
     import torch
-    word_to_idx = {w: torch.tensor(i, dtype=torch.long) for i, w in enumerate(vec_model.index2word)}
+    word_to_idx = {w: torch.tensor(i, dtype=torch.long).to("cuda") for i, w in enumerate(vec_model.index2word)}
     return word_to_idx
 
 
@@ -34,22 +34,23 @@ def load_graph(graph_file, vec_model, vec_model_initial, word_to_idx, rel_to_idx
         for triple in f.readlines():
             triple = triple.strip().split('  ,  ')
             if len(triple) == 3:
-                head_idx = word_to_idx.get(triple[0], torch.tensor(1, dtype=torch.long)) #if triple[0] else 'UNK'
-                tail_idx = word_to_idx.get(triple[2], torch.tensor(1, dtype=torch.long)) #if triple[2] else 'UNK'
+                head_idx = word_to_idx.get(triple[0], None) #torch.tensor(1, dtype=torch.long)) #if triple[0] else 'UNK'
+                tail_idx = word_to_idx.get(triple[2], None) # torch.tensor(1, dtype=torch.long)) #if triple[2] else 'UNK'
             else:
                 continue
-            triple = ({'head': head_idx, 'rel': torch.tensor(0), 'tail': tail_idx}, torch.tensor(0)) # 1 car positive
-            triples.append(triple)
-            for neg in range(neg_sample):
-                triples.append((generate_negative_sample(triple, vocab_size), torch.tensor(1)))
+            if head_idx and tail_idx:
+                triple = ({'head': head_idx, 'rel': torch.tensor(0).to("cuda"), 'tail': tail_idx}, torch.tensor(0)) # 1 car positive
+                triples.append(triple)
+                for neg in range(neg_sample):
+                    triples.append((generate_negative_sample(triple, vocab_size), torch.tensor(1)))
     return triples
 
 
 def generate_negative_sample(true_fact, vocab_size):
     import torch
     import random
-    head_or_tail = random.getrandbits(1)
-    rand_word_idx = torch.tensor(random.randint(0, vocab_size-1), dtype=torch.long)
+    head_or_tail = torch.tensor(random.getrandbits(1)).to("cuda")
+    rand_word_idx = torch.tensor(random.randint(0, vocab_size-1), dtype=torch.long).to("cuda")
     if head_or_tail:
         return {'head': rand_word_idx, 'rel': true_fact[0]['rel'], 'tail': true_fact[0]['tail']}
     return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': rand_word_idx}

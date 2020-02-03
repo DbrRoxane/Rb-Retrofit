@@ -16,13 +16,12 @@ class Retrofit(nn.Module):
         self.embedding.weight.requires_grad = True
         self.fc = nn.Linear(self.embedding.embedding_dim*2, 2)
         self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        self.softmax = nn.Softmax(dim=1)
         self.loss_function = nn.CrossEntropyLoss()
 
     def forward(self, x):
-        head_embedding = self.embedding(x['head'])
-        tail_embedding = self.embedding(x['tail'])
+        head_embedding = self.embedding(x['head'].cuda())
+        tail_embedding = self.embedding(x['tail'].cuda())
         embeddings = torch.cat((head_embedding, tail_embedding), 1)
-        output = self.softmax(self.fc(embeddings))
+        output = self.fc(embeddings)
         return output
 

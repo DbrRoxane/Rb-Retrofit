@@ -14,11 +14,10 @@ params_network = {'embedding_dim': 300,
                   'number_models': len(pretrained_embs)}
 
 params_optimizer = {'lr': 1e-3,
-                    'momentum': 0.9,
-                    'weight_decay': 1e-2}
+                    'weight_decay': 1e-1}
 
 device = 0
 epoch = 4
-dir_experiment = './experiment/experiment_retrofit_2neg_crossEntr_1'
+dir_experiment = './experiment/experiment_retrofit_2neg_crossEntr_nounk_lrschedule_lr1e3_2'
 embedding_dim = 300
 nb_false = 2

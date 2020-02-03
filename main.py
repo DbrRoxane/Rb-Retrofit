@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from gensim.models import KeyedVectors
-from poutyne.framework import Experiment
+from poutyne.framework import Experiment, StepLR
 
 from models.retrofitting import Retrofit
 from data_loader.utils import load_graph, prepare_generator_graph, set_word_to_idx
@@ -16,7 +16,9 @@ def main():
 
     vec_model_initial = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
     original_weights = torch.FloatTensor(vec_model_initial.vectors)
+    original_weights.to("cuda")
     original_embs = nn.Embedding.from_pretrained(original_weights)
+    original_embs.cuda()
     original_embs.weight.requires_grad = False
 
     word_to_idx = set_word_to_idx(vec_model)
@@ -31,16 +33,19 @@ def main():
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
     network = Retrofit(vec_model)
-    optimizer = optim.SGD(network.parameters(), **config.params_optimizer)
+    optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
+    scheduler = StepLR(step_size=1, gamma=0.3)
+    callbacks = [scheduler]
 
     exp = Experiment(config.dir_experiment,
                      network,
                      device=device,
                      optimizer=optimizer,
                      loss_function=None,
-                     batch_metrics=['acc'])
+                     batch_metrics=['acc']
+                     )
 
-    exp.train(train_generator, valid_generator, epochs=config.epoch)
+    exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks)
     exp.test(test_generator)
 
     learning_visualizer = LearningVisualizer(exp, config.epoch)
