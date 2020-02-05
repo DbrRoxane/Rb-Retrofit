@@ -32,10 +32,10 @@ def main():
     print("Breakpoint 3")
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-    network = Retrofit(vec_model)
+    network = Retrofit(vec_model, word_to_idx)
     optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
-    scheduler = StepLR(step_size=1, gamma=0.3)
-    callbacks = [scheduler]
+    #scheduler = StepLR(step_size=1, gamma=0.3)
+    #callbacks = [scheduler]
 
     exp = Experiment(config.dir_experiment,
                      network,
@@ -45,7 +45,7 @@ def main():
                      batch_metrics=['acc']
                      )
 
-    exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks)
+    exp.train(train_generator, valid_generator, epochs=config.epoch) #, lr_schedulers=callbacks)
     exp.test(test_generator)
 
     learning_visualizer = LearningVisualizer(exp, config.epoch)

@@ -39,11 +39,18 @@ def load_graph(graph_file, vec_model, vec_model_initial, word_to_idx, rel_to_idx
             else:
                 continue
             if head_idx and tail_idx:
+                # positive has class 0 and negative class 1
                 triple = ({'head': head_idx, 'rel': torch.tensor(0).to("cuda"), 'tail': tail_idx}, torch.tensor(0)) # 1 car positive
                 triples.append(triple)
                 for neg in range(neg_sample):
                     triples.append((generate_negative_sample(triple, vocab_size), torch.tensor(1)))
     return triples
+
+
+def compute_weight(nb_neg_sample):
+    w_pos = 1./ (1 + nb_neg_sample)
+    w_neg = 1 - w_pos
+    return w_pos, w_neg
 
 
 def generate_negative_sample(true_fact, vocab_size):

@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from data_loader.utils import set_word_to_idx
+from data_loader.utils import set_word_to_idx, compute_weight
 
 
 class Retrofit(nn.Module):
@@ -8,14 +8,14 @@ class Retrofit(nn.Module):
     Retrofitting from Faruqi
     Adapted for neural net
     """
-    def __init__(self, vec_model):
+    def __init__(self, vec_model, word_to_idx):
         super(Retrofit, self).__init__()
-        self.word_to_idx = set_word_to_idx(vec_model)
+        self.word_to_idx = word_to_idx
         weights = torch.FloatTensor(vec_model.vectors)
         self.embedding = nn.Embedding.from_pretrained(weights)
         self.embedding.weight.requires_grad = True
         self.fc = nn.Linear(self.embedding.embedding_dim*2, 2)
-        self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        #self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
         self.loss_function = nn.CrossEntropyLoss()
 
     def forward(self, x):

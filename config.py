@@ -18,6 +18,6 @@ params_optimizer = {'lr': 1e-3,
 
 device = 0
 epoch = 4
-dir_experiment = './experiment/experiment_retrofit_2neg_crossEntr_nounk_lrschedule_lr1e3_2'
+dir_experiment = './experiment/experiment_retrofit_0502'
 embedding_dim = 300
-nb_false = 2
+nb_false = 1
