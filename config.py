@@ -13,11 +13,11 @@ train_prop, valid_prop = 0.7, 0.15
 params_network = {'embedding_dim': 300,
                   'number_models': len(pretrained_embs)}
 
-params_optimizer = {'lr': 1e-3,
+params_optimizer = {'lr': 1e-5,
                     'weight_decay': 1e-1}
 
 device = 0
-epoch = 4
-dir_experiment = './experiment/experiment_retrofit_0502'
+epoch = 10
+dir_experiment = './experiment/experiment_retrofit_0902_maxnorm'
 embedding_dim = 300
 nb_false = 1
