@@ -33,9 +33,14 @@ def main():
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
     network = Retrofit(vec_model, word_to_idx)
-    optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
+    #optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
     #scheduler = StepLR(step_size=1, gamma=0.3)
     #callbacks = [scheduler]
+
+    embeddings_param_set = set(network.embedding.parameters())
+    other_params_list = [p for p in network.parameters() if p not in embeddings_param_set]
+    optimizer = optim.Adam([{'params': other_params_list, **config.optimizer_other_params},
+                           {'params': network.embedding.parameters(), **config.optimizer_embeddings_params}])
 
     exp = Experiment(config.dir_experiment,
                      network,
