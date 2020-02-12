@@ -1,38 +1,53 @@
+
+import os
+import pickle
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from poutyne.framework.callbacks.lr_scheduler import LambdaLR
 from gensim.models import KeyedVectors
-from poutyne.framework import Experiment, StepLR
+from poutyne.framework import Experiment
 
 from models.retrofitting import Retrofit
-from data_loader.utils import load_graph, prepare_generator_graph, set_word_to_idx
+from data_loader.utils import load_graph, prepare_generator_graph, set_word_to_idx, compute_weight
 import config
 from evaluation.similarity import men_evaluation
 from evaluation.test_emb.redimensionality_learning import LearningVisualizer
 
 
+def lambda_lr_embedding(current_epoch):
+    if current_epoch <= 3:
+        return 1e-2
+    elif 3 < current_epoch <= 6:
+        return 1
+    else:
+        return 0
+
+
+def lambda_lr_other(current_epoch):
+    if current_epoch <= 3:
+        return 1
+    elif 3 < current_epoch <= 6:
+        return 0
+    else:
+        return 1
+
+
 def main():
     vec_model = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
-
-    vec_model_initial = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
-    original_weights = torch.FloatTensor(vec_model_initial.vectors)
-    original_weights.to("cuda")
-    original_embs = nn.Embedding.from_pretrained(original_weights)
-    original_embs.cuda()
-    original_embs.weight.requires_grad = False
-
     word_to_idx = set_word_to_idx(vec_model)
     print("Breakpoint 1")
 
-    x = load_graph(config.graphs[0], vec_model, vec_model_initial, word_to_idx)
+    x = load_graph(config.graphs[0], vec_model, word_to_idx, neg_sample=config.nb_false)
+
+    weight = compute_weight(config.nb_false)
 
     print("Breakpoint 2")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
-
     print("Breakpoint 3")
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-    network = Retrofit(vec_model, word_to_idx)
+    network = Retrofit(vec_model, word_to_idx, weight)
     #optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
     #scheduler = StepLR(step_size=1, gamma=0.3)
     #callbacks = [scheduler]
@@ -42,15 +57,18 @@ def main():
     optimizer = optim.Adam([{'params': other_params_list, **config.optimizer_other_params},
                            {'params': network.embedding.parameters(), **config.optimizer_embeddings_params}])
 
+    scheduler = LambdaLR(lr_lambda=[lambda_lr_other, lambda_lr_embedding])
+    callbacks = [scheduler]
+
     exp = Experiment(config.dir_experiment,
                      network,
                      device=device,
                      optimizer=optimizer,
                      loss_function=None,
                      batch_metrics=['acc']
-                     )
+                )
 
-    exp.train(train_generator, valid_generator, epochs=config.epoch) #, lr_schedulers=callbacks)
+    exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks) #, lr_schedulers=callbacks)
     exp.test(test_generator)
 
     learning_visualizer = LearningVisualizer(exp, config.epoch)
@@ -63,7 +81,12 @@ def main():
                          word_to_idx,
                          exp.model.model.embedding))
 
-
+    vec_model_initial = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
+    original_weights = torch.FloatTensor(vec_model_initial.vectors)
+    original_weights.to("cuda")
+    original_embs = nn.Embedding.from_pretrained(original_weights)
+    original_embs.cuda()
+    original_embs.weight.requires_grad = False
 
     print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', word_to_idx, original_embs))
 

@@ -26,7 +26,7 @@ def load_pretrained(embedding_files):
     return embedding
 
 
-def load_graph(graph_file, vec_model, vec_model_initial, word_to_idx, rel_to_idx=None, neg_sample=1):
+def load_graph(graph_file, vec_model, word_to_idx, rel_to_idx=None, neg_sample=1):
     import torch
     triples = []
     vocab_size = len(vec_model.index2word)
@@ -48,9 +48,10 @@ def load_graph(graph_file, vec_model, vec_model_initial, word_to_idx, rel_to_idx
 
 
 def compute_weight(nb_neg_sample):
+    import torch
     w_pos = 1./ (1 + nb_neg_sample)
     w_neg = 1 - w_pos
-    return w_pos, w_neg
+    return torch.tensor((w_pos, w_neg))
 
 
 def generate_negative_sample(true_fact, vocab_size):

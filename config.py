@@ -13,15 +13,14 @@ train_prop, valid_prop = 0.7, 0.15
 params_network = {'embedding_dim': 300,
                   'number_models': len(pretrained_embs)}
 
-optimizer_other_params = {'lr': 1e-5,
+optimizer_other_params = {'lr': 1e-4,
                     'weight_decay': 1e-1}
 
-
-optimizer_embeddings_params = {'lr': 1e-6,
+optimizer_embeddings_params = {'lr': 1e-4,
                     'weight_decay': 1e-1}
 
 device = 0
 epoch = 10
-dir_experiment = './experiment/experiment_retrofit_1002_finetune3'
+dir_experiment = './experiment/experiment_retrofit_1202_finetune2'
 embedding_dim = 300
 nb_false = 1

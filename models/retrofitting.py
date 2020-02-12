@@ -8,15 +8,14 @@ class Retrofit(nn.Module):
     Retrofitting from Faruqi
     Adapted for neural net
     """
-    def __init__(self, vec_model, word_to_idx):
+    def __init__(self, vec_model, word_to_idx, weight):
         super(Retrofit, self).__init__()
         self.word_to_idx = word_to_idx
         weights = torch.FloatTensor(vec_model.vectors)
         self.embedding = nn.Embedding.from_pretrained(weights, max_norm=2)
         self.embedding.weight.requires_grad = True
         self.fc = nn.Linear(self.embedding.embedding_dim*2, 2)
-        #self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        self.loss_function = nn.CrossEntropyLoss()
+        self.loss_function = nn.CrossEntropyLoss(weight=weight)
 
     def forward(self, x):
         head_embedding = self.embedding(x['head'].cuda())
