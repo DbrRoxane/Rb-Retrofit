@@ -4,6 +4,7 @@ import pickle
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from sklearn.metrics import confusion_matrix
 from poutyne.framework.callbacks.lr_scheduler import LambdaLR
 from gensim.models import KeyedVectors
 from poutyne.framework import Experiment
@@ -16,21 +17,21 @@ from evaluation.test_emb.redimensionality_learning import LearningVisualizer
 
 
 def lambda_lr_embedding(current_epoch):
-    if current_epoch <= 3:
+    if current_epoch <= 2:
         return 1e-2
-    elif 3 < current_epoch <= 6:
-        return 1
+    elif 2 < current_epoch <= 5:
+        return 1e-2
     else:
         return 0
 
 
 def lambda_lr_other(current_epoch):
-    if current_epoch <= 3:
+    if current_epoch <= 2:
         return 1
-    elif 3 < current_epoch <= 6:
+    elif 2 < current_epoch <= 5:
         return 0
     else:
-        return 1
+        return 1e-2
 
 
 def main():
@@ -70,6 +71,13 @@ def main():
 
     exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks) #, lr_schedulers=callbacks)
     exp.test(test_generator)
+
+    steps = len(test_generator)
+    test_loss, test_metrics, pred_y, true_y = exp.model.evaluate_generator(test_generator,
+                                                                           return_pred=True,
+                                                                           return_ground_truth=True,
+                                                                           steps=steps)
+    tn, fp, fn, tp = confusion_matrix(true_y, pred_y)
 
     learning_visualizer = LearningVisualizer(exp, config.epoch)
     learning_visualizer.visualize_learning()

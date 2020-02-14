@@ -21,6 +21,6 @@ optimizer_embeddings_params = {'lr': 1e-4,
 
 device = 0
 epoch = 10
-dir_experiment = './experiment/experiment_retrofit_1202_finetune2'
+dir_experiment = './experiment/experiment_retrofit_1202_finetune6'
 embedding_dim = 300
-nb_false = 1
+nb_false = 2
