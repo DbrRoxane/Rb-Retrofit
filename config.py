@@ -1,5 +1,6 @@
 pretrained_embs =  ['./data/crawl-300d-2M.vec'] # ['./data/wgc_g_zip.txt'] ['./data/wgc_w_zip.txt'] #,
-graphs = ['./data/synonyms_triplet.txt'] #['./data/cn_relations_orig.txt'] ['./data/cnet_graph_score.txt', './data/wordnet_graph_score.txt', './data/ppdb_graph_score.txt']
+synonyms_graph = ['./data/synonyms_triplet.txt'] #['./data/cn_relations_orig.txt'] ['./data/cnet_graph_score.txt', './data/wordnet_graph_score.txt', './data/ppdb_graph_score.txt']
+antonyms_graph = ['./data/antonyms_triplet.txt']
 entities_file = './data/vocab_Ins_wgc.txt'
 relations_file = ['./data/cnetrellist.txt', './data/wordnetrellist.txt', './data/ppdbrellist.txt']
 
@@ -21,6 +22,6 @@ optimizer_embeddings_params = {'lr': 1e-2,
 
 device = 0
 epoch = 10
-dir_experiment = './experiment/experiment_retrofit_1702_finetune2'
+dir_experiment = './experiment/experiment_retrofit_1702_finetune6'
 embedding_dim = 300
 nb_false = 1

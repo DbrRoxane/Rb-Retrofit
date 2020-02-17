@@ -1,18 +1,3 @@
-def create_vocab(vocab_file):
-    with open(vocab_file, "r") as f:
-        vocab = set(f.read().splitlines())
-    word_to_idx = {word: i+2 for i, word in enumerate(sorted(vocab))}
-    word_to_idx['<PAD>'] = 0
-    word_to_idx['<UNK>'] = 1
-    return word_to_idx
-
-
-def set_word_to_idx(vec_model):
-    import torch
-    word_to_idx = {w: torch.tensor(i, dtype=torch.long).to("cuda") for i, w in enumerate(vec_model.index2word)}
-    return word_to_idx
-
-
 def load_pretrained(embedding_files):
 
     from gensim.models import KeyedVectors
@@ -26,7 +11,7 @@ def load_pretrained(embedding_files):
     return embedding
 
 
-def load_graph(graph_file, vec_model, word_to_idx, rel_to_idx=None, neg_sample=1):
+def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=1, num_class=0):
     import torch
     triples = []
     vocab_size = len(vec_model.index2word)
@@ -34,17 +19,28 @@ def load_graph(graph_file, vec_model, word_to_idx, rel_to_idx=None, neg_sample=1
         for triple in f.readlines():
             triple = triple.strip().split('  ,  ')
             if len(triple) == 3:
-                head_idx = word_to_idx.get(triple[0], None) #torch.tensor(1, dtype=torch.long)) #if triple[0] else 'UNK'
-                tail_idx = word_to_idx.get(triple[2], None) # torch.tensor(1, dtype=torch.long)) #if triple[2] else 'UNK'
+                head_idx = vec_model.vocab.get(triple[0], None)
+                tail_idx = vec_model.vocab.get(triple[2], None)
             else:
                 continue
             if head_idx and tail_idx:
                 # positive has class 0 and negative class 1
-                triple = ({'head': head_idx, 'rel': torch.tensor(0).to("cuda"), 'tail': tail_idx}, torch.tensor(0)) # 1 car positive
+                triple = ({'head': head_idx.index, 'rel': torch.tensor(0).to("cuda"), 'tail': tail_idx.index}, torch.tensor(num_class)) # 1 car positive
                 triples.append(triple)
                 for neg in range(neg_sample):
                     triples.append((generate_negative_sample(triple, vocab_size), torch.tensor(1)))
     return triples
+
+
+def load_anto_syn_graph(syn_file, anto_file, vec_model, rel_to_idx=None, neg_sample=1):
+    import random
+    antonyms = load_graph(anto_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=0)
+    synonyms = load_graph(syn_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=1)
+    print(len(antonyms))
+    print(len(synonyms))
+    antosyn = antonyms+synonyms
+    random.shuffle(antosyn)
+    return antosyn
 
 
 def compute_weight(nb_neg_sample):

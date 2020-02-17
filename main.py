@@ -10,7 +10,7 @@ from gensim.models import KeyedVectors
 from poutyne.framework import Experiment
 
 from models.retrofitting import Retrofit
-from data_loader.utils import load_graph, prepare_generator_graph, set_word_to_idx, compute_weight
+from data_loader.utils import load_anto_syn_graph, prepare_generator_graph, compute_weight
 import config
 from evaluation.similarity import men_evaluation
 from evaluation.test_emb.redimensionality_learning import LearningVisualizer
@@ -36,10 +36,10 @@ def lambda_lr_other(current_epoch):
 
 def main():
     vec_model = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
-    word_to_idx = set_word_to_idx(vec_model)
     print("Breakpoint 1")
 
-    x = load_graph(config.graphs[0], vec_model, word_to_idx, neg_sample=config.nb_false)
+    x = load_anto_syn_graph(config.synonyms_graph[0], config.antonyms_graph[0],
+                            vec_model, neg_sample=config.nb_false)
 
     weight = compute_weight(config.nb_false)
 
@@ -48,7 +48,7 @@ def main():
     print("Breakpoint 3")
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-    network = Retrofit(vec_model, word_to_idx, weight)
+    network = Retrofit(vec_model, weight)
     #optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
     #scheduler = StepLR(step_size=1, gamma=0.3)
     #callbacks = [scheduler]
@@ -77,7 +77,7 @@ def main():
                                                                            return_pred=True,
                                                                            return_ground_truth=True,
                                                                            steps=steps)
-    #tn, fp, fn, tp = confusion_matrix(true_y, pred_y)
+    tn, fp, fn, tp = confusion_matrix(true_y, pred_y)
 
     learning_visualizer = LearningVisualizer(exp, config.epoch)
     learning_visualizer.visualize_learning()
