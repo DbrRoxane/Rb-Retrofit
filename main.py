@@ -17,19 +17,19 @@ from evaluation.test_emb.redimensionality_learning import LearningVisualizer
 
 
 def lambda_lr_embedding(current_epoch):
-    if current_epoch <= 2:
+    if current_epoch <= 4:
         return 1e-2
-    elif 2 < current_epoch <= 5:
-        return 1e-2
+    elif 4 < current_epoch <= 8:
+        return 1e-3
     else:
         return 0
 
 
 def lambda_lr_other(current_epoch):
-    if current_epoch <= 2:
+    if current_epoch <= 4:
         return 1
-    elif 2 < current_epoch <= 5:
-        return 0
+    elif 4 < current_epoch <= 8:
+        return 1e-1
     else:
         return 1e-2
 
@@ -55,7 +55,7 @@ def main():
 
     embeddings_param_set = set(network.embedding.parameters())
     other_params_list = [p for p in network.parameters() if p not in embeddings_param_set]
-    optimizer = optim.Adam([{'params': other_params_list, **config.optimizer_other_params},
+    optimizer = optim.SGD([{'params': other_params_list, **config.optimizer_other_params},
                            {'params': network.embedding.parameters(), **config.optimizer_embeddings_params}])
 
     scheduler = LambdaLR(lr_lambda=[lambda_lr_other, lambda_lr_embedding])
@@ -77,7 +77,7 @@ def main():
                                                                            return_pred=True,
                                                                            return_ground_truth=True,
                                                                            steps=steps)
-    tn, fp, fn, tp = confusion_matrix(true_y, pred_y)
+    #tn, fp, fn, tp = confusion_matrix(true_y, pred_y)
 
     learning_visualizer = LearningVisualizer(exp, config.epoch)
     learning_visualizer.visualize_learning()
