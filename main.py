@@ -41,14 +41,14 @@ def main():
     x = load_anto_syn_graph(config.synonyms_graph[0], config.antonyms_graph[0],
                             vec_model, neg_sample=config.nb_false)
 
-    weight = compute_weight(config.nb_false)
+    #weight = compute_weight(config.nb_false)
 
     print("Breakpoint 2")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
     print("Breakpoint 3")
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-    network = Retrofit(vec_model, weight)
+    network = Retrofit(vec_model)
     #optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
     #scheduler = StepLR(step_size=1, gamma=0.3)
     #callbacks = [scheduler]
@@ -66,7 +66,7 @@ def main():
                      device=device,
                      optimizer=optimizer,
                      loss_function=None,
-                     batch_metrics=['acc']
+                     batch_metrics=['bin_acc']
                 )
 
     exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks) #, lr_schedulers=callbacks)
@@ -77,7 +77,7 @@ def main():
                                                                            return_pred=True,
                                                                            return_ground_truth=True,
                                                                            steps=steps)
-    tn, fp, fn, tp = confusion_matrix(true_y, pred_y)
+    #tn, fp, fn, tp = confusion_matrix(true_y, pred_y)
 
     learning_visualizer = LearningVisualizer(exp, config.epoch)
     learning_visualizer.visualize_learning()
@@ -85,9 +85,8 @@ def main():
     exp._load_best_checkpoint()
     exp.model.model.embedding.weight.requires_grad = False
 
-    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test',
-                         word_to_idx,
-                         exp.model.model.embedding))
+    #print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test',
+    #                     exp.model.model.embedding))
 
     vec_model_initial = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
     original_weights = torch.FloatTensor(vec_model_initial.vectors)
@@ -96,7 +95,7 @@ def main():
     original_embs.cuda()
     original_embs.weight.requires_grad = False
 
-    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', word_to_idx, original_embs))
+    #print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', original_embs))
 
 
 if __name__ == '__main__':
