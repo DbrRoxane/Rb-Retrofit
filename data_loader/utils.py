@@ -34,8 +34,8 @@ def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=1, num_class=0
 
 def load_anto_syn_graph(syn_file, anto_file, vec_model, rel_to_idx=None, neg_sample=1):
     import random
-    antonyms = load_graph(anto_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=0.)
-    synonyms = load_graph(syn_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=1.)
+    antonyms = load_graph(anto_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=1.)
+    synonyms = load_graph(syn_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=0.)
     print(len(antonyms))
     print(len(synonyms))
     antosyn = antonyms+synonyms
