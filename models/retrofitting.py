@@ -7,7 +7,7 @@ class Retrofit(nn.Module):
         super(Retrofit, self).__init__()
         weights = torch.FloatTensor(vec_model.vectors)
         self.embedding = nn.Embedding.from_pretrained(weights)
-        self.embedding.weight.requires_grad = False
+        self.embedding.weight.requires_grad = True
         self.fc1 = nn.Linear(self.embedding.embedding_dim*2, self.embedding.embedding_dim)
         self.fc2 = nn.Linear(self.embedding.embedding_dim, 2)
         self.loss_function = nn.CrossEntropyLoss(weight=weight)

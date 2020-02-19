@@ -17,11 +17,11 @@ params_network = {'embedding_dim': 300,
 optimizer_other_params = {'lr': 1e-2,
                     'weight_decay': 1e-1}
 
-optimizer_embeddings_params = {'lr': 1e-2,
+optimizer_embeddings_params = {'lr': 1e-4,
                     'weight_decay': 1e-1}
 
 device = 0
-epoch = 15
-dir_experiment = './experiment/experiment_retrofit_2002_finetune3'
+epoch = 23
+dir_experiment = './experiment/experiment_retrofit_2002_finetune7'
 embedding_dim = 300
 nb_false = 0

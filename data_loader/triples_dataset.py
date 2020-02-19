@@ -9,5 +9,6 @@ class TriplesDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
+        import torch
         triple, label = self.dataset[index]
-        return triple, label
+        return triple, torch.tensor(label)

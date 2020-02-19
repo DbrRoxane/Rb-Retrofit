@@ -1,12 +1,9 @@
-
-import os
-import pickle
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn.metrics import confusion_matrix
-from poutyne.framework.callbacks.lr_scheduler import LambdaLR
+from poutyne.framework.callbacks.lr_scheduler import LambdaLR, StepLR
 from gensim.models import KeyedVectors
 from poutyne.framework import Experiment
 
@@ -18,12 +15,14 @@ from evaluation.test_emb.redimensionality_learning import LearningVisualizer
 
 
 def lambda_lr_embedding(current_epoch):
-    if current_epoch <= 4:
+    if current_epoch <= 1:
+        return 0
+    elif current_epoch <= 4:
         return 1e-2
     elif 4 < current_epoch <= 8:
         return 1e-3
     else:
-        return 0
+        return 1e-3
 
 
 def lambda_lr_other(current_epoch):
@@ -42,7 +41,7 @@ def main():
     x = load_anto_syn_graph(config.synonyms_graph[0], config.antonyms_graph[0],
                             vec_model, neg_sample=config.nb_false)
 
-    weight = torch.tensor([1., 585850./208019])
+    weight = compute_weight(x)
 
     print("Breakpoint 2")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
@@ -50,16 +49,14 @@ def main():
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
     network = Retrofit(vec_model, weight)
-    #optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
-    #scheduler = StepLR(step_size=1, gamma=0.3)
-    #callbacks = [scheduler]
 
     embeddings_param_set = set(network.embedding.parameters())
     other_params_list = [p for p in network.parameters() if p not in embeddings_param_set]
     optimizer = optim.SGD([{'params': other_params_list, **config.optimizer_other_params},
                            {'params': network.embedding.parameters(), **config.optimizer_embeddings_params}])
 
-    scheduler = LambdaLR(lr_lambda=[lambda_lr_other, lambda_lr_embedding])
+    #scheduler = LambdaLR(lr_lambda=[lambda_lr_other, lambda_lr_embedding])
+    scheduler = StepLR(step_size=6, gamma=0.3)
     callbacks = [scheduler]
 
     exp = Experiment(config.dir_experiment,

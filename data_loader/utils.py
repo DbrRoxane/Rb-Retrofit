@@ -24,8 +24,10 @@ def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=1, num_class=0
             else:
                 continue
             if head_idx and tail_idx:
-                # positive has class 0 and negative class 1
-                triple = ({'head': head_idx.index, 'rel': torch.tensor(0).to("cuda"), 'tail': tail_idx.index}, torch.tensor(num_class)) # 1 car positive
+                triple = ({'head': head_idx.index,
+                           'rel': torch.tensor(0).to("cuda"),
+                           'tail': tail_idx.index},
+                          num_class)
                 triples.append(triple)
                 for neg in range(neg_sample):
                     triples.append((generate_negative_sample(triple, vocab_size), torch.tensor(1)))
@@ -39,8 +41,12 @@ def load_anto_syn_graph(syn_file, anto_file, vec_model, rel_to_idx=None, neg_sam
     return antosyn
 
 
-def compute_weight(class_repartition):
+def compute_weight(x):
     import torch
+    import numpy as np
+    x = np.asarray(x)
+    labels = x[:,1]
+    _, class_repartition = np.unique(np.sort(labels), return_counts=True)
     baseline = float(class_repartition[0])
     weights = [baseline/nb for nb in class_repartition]
     return torch.tensor(weights)
