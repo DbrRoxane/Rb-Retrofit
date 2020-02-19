@@ -33,21 +33,17 @@ def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=1, num_class=0
 
 
 def load_anto_syn_graph(syn_file, anto_file, vec_model, rel_to_idx=None, neg_sample=1):
-    import random
-    antonyms = load_graph(anto_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=1)[:200000]
-    synonyms = load_graph(syn_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=0)[:200000]
-    print(len(antonyms))
-    print(len(synonyms))
+    antonyms = load_graph(anto_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=1)
+    synonyms = load_graph(syn_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=0)
     antosyn = antonyms+synonyms
-    random.shuffle(antosyn)
     return antosyn
 
 
-def compute_weight(nb_neg_sample):
+def compute_weight(class_repartition):
     import torch
-    w_pos = 1./ (1 + nb_neg_sample)
-    w_neg = 1 - w_pos
-    return torch.tensor((w_pos, w_neg))
+    baseline = float(class_repartition[0])
+    weights = [baseline/nb for nb in class_repartition]
+    return torch.tensor(weights)
 
 
 def generate_negative_sample(true_fact, vocab_size):

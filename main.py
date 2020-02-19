@@ -41,7 +41,7 @@ def main():
     x = load_anto_syn_graph(config.synonyms_graph[0], config.antonyms_graph[0],
                             vec_model, neg_sample=config.nb_false)
 
-    weight = compute_weight(config.nb_false)
+    weight = torch.tensor([1., 585850./208019])
 
     print("Breakpoint 2")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
