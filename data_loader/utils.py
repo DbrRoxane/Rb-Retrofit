@@ -56,26 +56,6 @@ def generate_negative_sample(true_fact, vocab_size):
     return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': rand_word_idx}
 
 
-def prepare_generator(x, y, vocab_size, config):
-    from torch.utils import data
-    from data_loader.dataset import EmbeddingDataset
-
-    xy = list(((idx, emb) for idx, emb in zip(x, y)))
-
-    full_dataset = EmbeddingDataset(xy)
-
-    train_size, valid_size = int(config.train_prop * vocab_size), int(config.valid_prop * vocab_size)
-    test_size = vocab_size - train_size - valid_size
-
-    train_dataset, valid_dataset, test_dataset = data.random_split(full_dataset, [train_size, valid_size, test_size])
-
-    train_generator = data.DataLoader(train_dataset, **config.params_dataset)
-    valid_generator = data.DataLoader(valid_dataset, **config.params_dataset)
-    test_generator = data.DataLoader(test_dataset, **config.params_dataset)
-
-    return train_generator, valid_generator, test_generator
-
-
 def prepare_generator_graph(x):
     from torch.utils import data
     from data_loader.triples_dataset import TriplesDataset
@@ -92,12 +72,3 @@ def prepare_generator_graph(x):
     test_generator = data.DataLoader(test_dataset, **config.params_dataset)
 
     return train_generator, valid_generator, test_generator
-
-
-def get_one_hot(idx, vocab_size):
-    import numpy as np
-    import torch
-
-    one_hot = np.zeros(vocab_size)
-    one_hot[idx] = 1
-    return torch.tensor(one_hot).float()

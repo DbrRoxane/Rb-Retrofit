@@ -1,6 +1,7 @@
 
 import os
 import pickle
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -69,7 +70,7 @@ def main():
                      batch_metrics=['acc']
                 )
 
-    exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks) #, lr_schedulers=callbacks)
+    exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks)
     exp.test(test_generator)
 
     steps = len(test_generator)
@@ -77,7 +78,10 @@ def main():
                                                                            return_pred=True,
                                                                            return_ground_truth=True,
                                                                            steps=steps)
-    tn, fp, fn, tp = confusion_matrix(true_y, pred_y)
+    pred_y = np.argmax(np.concatenate(pred_y), 1)
+    true_y = np.concatenate(true_y)
+    true_syn, false_syn, false_anto, true_anto = confusion_matrix(true_y, pred_y).ravel()
+    print(true_syn, false_syn, false_anto, true_anto)
 
     learning_visualizer = LearningVisualizer(exp, config.epoch)
     learning_visualizer.visualize_learning()

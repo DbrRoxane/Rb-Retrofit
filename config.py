@@ -21,7 +21,7 @@ optimizer_embeddings_params = {'lr': 1e-2,
                     'weight_decay': 1e-1}
 
 device = 0
-epoch = 10
+epoch = 15
 dir_experiment = './experiment/experiment_retrofit_2002_finetune3'
 embedding_dim = 300
 nb_false = 0
