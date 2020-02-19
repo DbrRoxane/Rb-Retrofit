@@ -41,14 +41,14 @@ def main():
     x = load_anto_syn_graph(config.synonyms_graph[0], config.antonyms_graph[0],
                             vec_model, neg_sample=config.nb_false)
 
-    #weight = compute_weight(config.nb_false)
+    weight = torch.tensor([1., 585850./208019])
 
     print("Breakpoint 2")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
     print("Breakpoint 3")
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
-    network = Retrofit(vec_model)
+    network = Retrofit(vec_model, weight)
     #optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
     #scheduler = StepLR(step_size=1, gamma=0.3)
     #callbacks = [scheduler]
