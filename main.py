@@ -90,7 +90,7 @@ def main():
     exp.model.model.embedding.weight.requires_grad = False
 
     print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test',
-                         word_to_idx,
+                         vec_model.vocab,
                          exp.model.model.embedding))
 
     vec_model_initial = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
@@ -100,7 +100,7 @@ def main():
     original_embs.cuda()
     original_embs.weight.requires_grad = False
 
-    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', word_to_idx, original_embs))
+    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', vec_model.vocab, original_embs))
 
 
 if __name__ == '__main__':
