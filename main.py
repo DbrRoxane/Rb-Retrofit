@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn.metrics import confusion_matrix
-from poutyne.framework.callbacks.lr_scheduler import LambdaLR, StepLR
+from poutyne.framework.callbacks.lr_scheduler import LambdaLR, StepLR, ReduceLROnPlateau
 from gensim.models import KeyedVectors
 from poutyne.framework import Experiment
 
@@ -15,12 +15,12 @@ from evaluation.test_emb.redimensionality_learning import LearningVisualizer
 
 
 def lambda_lr_embedding(current_epoch):
-    if current_epoch <= 1:
+    if current_epoch <= 4:
         return 0
-    elif current_epoch <= 4:
+    elif current_epoch <= 10:
         return 1e-2
-    elif 4 < current_epoch <= 8:
-        return 1e-3
+    elif 4 < current_epoch <= 20:
+        return 3e-3
     else:
         return 1e-3
 
@@ -28,10 +28,12 @@ def lambda_lr_embedding(current_epoch):
 def lambda_lr_other(current_epoch):
     if current_epoch <= 4:
         return 1
-    elif 4 < current_epoch <= 8:
+    elif 4 < current_epoch <= 10:
         return 1e-1
-    else:
+    elif current_epoch <= 20:
         return 1e-2
+    else:
+        return 1e-3
 
 
 def main():
@@ -56,7 +58,8 @@ def main():
                            {'params': network.embedding.parameters(), **config.optimizer_embeddings_params}])
 
     #scheduler = LambdaLR(lr_lambda=[lambda_lr_other, lambda_lr_embedding])
-    scheduler = StepLR(step_size=6, gamma=0.3)
+    #scheduler = StepLR(step_size=8, gamma=0.1)
+    scheduler = ReduceLROnPlateau(monitor='val_loss', mode='min', patience=2, verbose=True)
     callbacks = [scheduler]
 
     exp = Experiment(config.dir_experiment,
