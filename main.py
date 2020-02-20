@@ -67,7 +67,7 @@ def main():
                      device=device,
                      optimizer=optimizer,
                      loss_function=None,
-                     batch_metrics=['bin_acc']
+                     batch_metrics=['acc']
                 )
 
     exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks)

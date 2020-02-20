@@ -12,8 +12,8 @@ class Retrofit(nn.Module):
         self.loss_function = nn.CrossEntropyLoss(weight=weight)
 
     def forward(self, x):
-        head_embedding = self.embedding(x['head'])
-        tail_embedding = self.embedding(x['tail'])
+        head_embedding = self.embedding(x['head'].cuda())
+        tail_embedding = self.embedding(x['tail'].cuda())
         embedded = torch.cat((head_embedding, tail_embedding), 1)
         output = self.fc1(embedded)
         return output
