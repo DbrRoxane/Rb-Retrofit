@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 # inspired from cn  numberbatch
-def read_men3000(filename):
+def read_evaluation_dataset(filename):
     """
     Parses the MEN test collection. MEN is a collection of 3000 english word
     pairs, each with a relatedness rating between 0 and 50. The relatedness of
@@ -13,9 +13,12 @@ def read_men3000(filename):
     with open(filename, 'r') as file:
         for line in file:
             parts = line.rstrip().split()
-            term1 = parts[0].split('-')[0]  # remove part of speech
-            term2 = parts[1].split('-')[0]
-            gold_score = float(parts[2])
+            term1 = parts[0]  # remove part of speech
+            term2 = parts[1]
+            if "MEN" in filename:
+                gold_score = float(parts[2])
+            elif "SimLex" in filename or "SimVerb" in filename:
+                gold_score = float(parts[3])
             yield term1, term2, gold_score
 
 
@@ -24,12 +27,12 @@ def cosine_similarity(word_vector_1, word_vector_2):
     return cos(word_vector_1, word_vector_2)
 
 
-def men_evaluation(filename, word_to_idx, embedding):
+def evaluation(filename, word_to_idx, embedding):
     from scipy.stats import spearmanr
     import numpy as np
 
     gold_scores, computed_scores = [], []
-    for term_1, term_2, gold_score in read_men3000(filename):
+    for term_1, term_2, gold_score in read_evaluation_dataset(filename):
         UNK_idx = word_to_idx["UNK"]
         idx_1, idx_2 = word_to_idx.get(term_1, UNK_idx), word_to_idx.get(term_2, UNK_idx)
         idx_1, idx_2 = torch.tensor(idx_1.index, device=torch.device("cuda")), \

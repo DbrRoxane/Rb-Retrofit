@@ -3,14 +3,14 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn.metrics import confusion_matrix
-from poutyne.framework.callbacks.lr_scheduler import LambdaLR, StepLR, ReduceLROnPlateau
+from poutyne.framework.callbacks.lr_scheduler import ReduceLROnPlateau
 from gensim.models import KeyedVectors
 from poutyne.framework import Experiment
 
 from models.retrofitting import Retrofit
 from data_loader.utils import load_anto_syn_graph, prepare_generator_graph, compute_weight
 import config
-from evaluation.similarity import men_evaluation
+from evaluation.similarity import evaluation
 from evaluation.test_emb.redimensionality_learning import LearningVisualizer
 
 
@@ -88,11 +88,9 @@ def main():
     learning_visualizer.visualize_learning()
 
     exp._load_best_checkpoint()
-    exp.model.model.embedding.weight.requires_grad = False
 
-    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test',
-                         vec_model.vocab,
-                         exp.model.model.embedding))
+    for file in config.evaluations_file:
+        print(evaluation(file, vec_model.vocab, exp.model.model.embedding))
 
     vec_model_initial = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
     original_weights = torch.FloatTensor(vec_model_initial.vectors)
@@ -101,7 +99,8 @@ def main():
     original_embs.cuda()
     original_embs.weight.requires_grad = False
 
-    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', vec_model.vocab, original_embs))
+    for file in config.evaluations_file:
+        print(evaluation(file, vec_model.vocab, original_embs))
 
 
 if __name__ == '__main__':

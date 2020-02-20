@@ -3,6 +3,9 @@ synonyms_graph = ['./data/synonyms_triplet.txt'] #['./data/cn_relations_orig.txt
 antonyms_graph = ['./data/antonyms_triplet.txt']
 entities_file = './data/vocab_Ins_wgc.txt'
 relations_file = ['./data/cnetrellist.txt', './data/wordnetrellist.txt', './data/ppdbrellist.txt']
+evaluations_file = ['./data/evaluation/MEN/MEN_dataset_natural_form_full',
+                    'data/evaluation/SimLex-999/SimLex-999.txt',
+                    './data/evaluation/SimVerb-3500.txt']
 
 params_dataset = {'batch_size': 1024,
                   'shuffle': True,
