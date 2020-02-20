@@ -1,11 +1,9 @@
-
-import os
-import pickle
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn.metrics import confusion_matrix
-from poutyne.framework.callbacks.lr_scheduler import LambdaLR
+from poutyne.framework.callbacks.lr_scheduler import LambdaLR, StepLR, ReduceLROnPlateau
 from gensim.models import KeyedVectors
 from poutyne.framework import Experiment
 
@@ -18,20 +16,24 @@ from evaluation.test_emb.redimensionality_learning import LearningVisualizer
 
 def lambda_lr_embedding(current_epoch):
     if current_epoch <= 4:
-        return 1e-2
-    elif 4 < current_epoch <= 8:
-        return 1e-3
-    else:
         return 0
+    elif current_epoch <= 10:
+        return 1e-2
+    elif 4 < current_epoch <= 20:
+        return 3e-3
+    else:
+        return 1e-3
 
 
 def lambda_lr_other(current_epoch):
     if current_epoch <= 4:
         return 1
-    elif 4 < current_epoch <= 8:
+    elif 4 < current_epoch <= 10:
         return 1e-1
-    else:
+    elif current_epoch <= 20:
         return 1e-2
+    else:
+        return 1e-3
 
 
 def main():
@@ -41,7 +43,7 @@ def main():
     x = load_anto_syn_graph(config.synonyms_graph[0], config.antonyms_graph[0],
                             vec_model, neg_sample=config.nb_false)
 
-    weight = torch.tensor([1., 585850./208019])
+    weight = compute_weight(x)
 
     print("Breakpoint 2")
     train_generator, valid_generator, test_generator = prepare_generator_graph(x)
@@ -49,16 +51,15 @@ def main():
     device = torch.device('cuda:%d' % config.device if torch.cuda.is_available() else 'cpu')
 
     network = Retrofit(vec_model, weight)
-    #optimizer = optim.Adam(network.parameters(), **config.params_optimizer)
-    #scheduler = StepLR(step_size=1, gamma=0.3)
-    #callbacks = [scheduler]
 
     embeddings_param_set = set(network.embedding.parameters())
     other_params_list = [p for p in network.parameters() if p not in embeddings_param_set]
     optimizer = optim.SGD([{'params': other_params_list, **config.optimizer_other_params},
                            {'params': network.embedding.parameters(), **config.optimizer_embeddings_params}])
 
-    scheduler = LambdaLR(lr_lambda=[lambda_lr_other, lambda_lr_embedding])
+    #scheduler = LambdaLR(lr_lambda=[lambda_lr_other, lambda_lr_embedding])
+    #scheduler = StepLR(step_size=8, gamma=0.1)
+    scheduler = ReduceLROnPlateau(monitor='val_loss', mode='min', patience=2, verbose=True)
     callbacks = [scheduler]
 
     exp = Experiment(config.dir_experiment,
@@ -69,7 +70,7 @@ def main():
                      batch_metrics=['bin_acc']
                 )
 
-    exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks) #, lr_schedulers=callbacks)
+    exp.train(train_generator, valid_generator, epochs=config.epoch, lr_schedulers=callbacks)
     exp.test(test_generator)
 
     steps = len(test_generator)
@@ -77,7 +78,11 @@ def main():
                                                                            return_pred=True,
                                                                            return_ground_truth=True,
                                                                            steps=steps)
-    #tn, fp, fn, tp = confusion_matrix(true_y, pred_y)
+
+    pred_y = np.argmax(np.concatenate(pred_y), 1)
+    true_y = np.concatenate(true_y)
+    true_syn, false_syn, false_anto, true_anto = confusion_matrix(true_y, pred_y).ravel()
+    print(true_syn, false_syn, false_anto, true_anto)
 
     learning_visualizer = LearningVisualizer(exp, config.epoch)
     learning_visualizer.visualize_learning()
@@ -85,8 +90,9 @@ def main():
     exp._load_best_checkpoint()
     exp.model.model.embedding.weight.requires_grad = False
 
-    #print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test',
-    #                     exp.model.model.embedding))
+    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test',
+                         vec_model.vocab,
+                         exp.model.model.embedding))
 
     vec_model_initial = KeyedVectors.load_word2vec_format(config.pretrained_embs[0], limit=500000)
     original_weights = torch.FloatTensor(vec_model_initial.vectors)
@@ -95,7 +101,7 @@ def main():
     original_embs.cuda()
     original_embs.weight.requires_grad = False
 
-    #print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', original_embs))
+    print(men_evaluation('./data/evaluation/MEN/MEN_dataset_lemma_form.test', vec_model.vocab, original_embs))
 
 
 if __name__ == '__main__':

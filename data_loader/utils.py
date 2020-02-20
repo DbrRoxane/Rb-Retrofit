@@ -24,8 +24,10 @@ def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=1, num_class=0
             else:
                 continue
             if head_idx and tail_idx:
-                # positive has class 0 and negative class 1
-                triple = ({'head': head_idx.index, 'rel': torch.tensor(0).to("cuda"), 'tail': tail_idx.index}, torch.tensor(num_class)) # 1 car positive
+                triple = ({'head': head_idx.index,
+                           'rel': torch.tensor(0).to("cuda"),
+                           'tail': tail_idx.index},
+                          num_class)
                 triples.append(triple)
                 for neg in range(neg_sample):
                     triples.append((generate_negative_sample(triple, vocab_size), torch.tensor(1)))
@@ -33,21 +35,21 @@ def load_graph(graph_file, vec_model, rel_to_idx=None, neg_sample=1, num_class=0
 
 
 def load_anto_syn_graph(syn_file, anto_file, vec_model, rel_to_idx=None, neg_sample=1):
-    import random
-    antonyms = load_graph(anto_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=1.)
-    synonyms = load_graph(syn_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=0.)
-    print(len(antonyms))
-    print(len(synonyms))
+    antonyms = load_graph(anto_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=1)
+    synonyms = load_graph(syn_file, vec_model, rel_to_idx=None, neg_sample=0, num_class=0)
     antosyn = antonyms+synonyms
-    random.shuffle(antosyn)
     return antosyn
 
 
-def compute_weight(nb_neg_sample):
+def compute_weight(x):
     import torch
-    w_pos = 1./ (1 + nb_neg_sample)
-    w_neg = 1 - w_pos
-    return torch.tensor((w_pos, w_neg))
+    import numpy as np
+    x = np.asarray(x)
+    labels = x[:,1]
+    _, class_repartition = np.unique(np.sort(labels), return_counts=True)
+    baseline = float(class_repartition[0])
+    weights = [baseline/nb for nb in class_repartition]
+    return torch.tensor(weights)
 
 
 def generate_negative_sample(true_fact, vocab_size):
@@ -58,26 +60,6 @@ def generate_negative_sample(true_fact, vocab_size):
     if head_or_tail:
         return {'head': rand_word_idx, 'rel': true_fact[0]['rel'], 'tail': true_fact[0]['tail']}
     return {'head': true_fact[0]['head'], 'rel': true_fact[0]['rel'], 'tail': rand_word_idx}
-
-
-def prepare_generator(x, y, vocab_size, config):
-    from torch.utils import data
-    from data_loader.dataset import EmbeddingDataset
-
-    xy = list(((idx, emb) for idx, emb in zip(x, y)))
-
-    full_dataset = EmbeddingDataset(xy)
-
-    train_size, valid_size = int(config.train_prop * vocab_size), int(config.valid_prop * vocab_size)
-    test_size = vocab_size - train_size - valid_size
-
-    train_dataset, valid_dataset, test_dataset = data.random_split(full_dataset, [train_size, valid_size, test_size])
-
-    train_generator = data.DataLoader(train_dataset, **config.params_dataset)
-    valid_generator = data.DataLoader(valid_dataset, **config.params_dataset)
-    test_generator = data.DataLoader(test_dataset, **config.params_dataset)
-
-    return train_generator, valid_generator, test_generator
 
 
 def prepare_generator_graph(x):
@@ -96,12 +78,3 @@ def prepare_generator_graph(x):
     test_generator = data.DataLoader(test_dataset, **config.params_dataset)
 
     return train_generator, valid_generator, test_generator
-
-
-def get_one_hot(idx, vocab_size):
-    import numpy as np
-    import torch
-
-    one_hot = np.zeros(vocab_size)
-    one_hot[idx] = 1
-    return torch.tensor(one_hot).float()

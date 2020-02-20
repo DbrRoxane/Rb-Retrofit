@@ -30,8 +30,10 @@ def men_evaluation(filename, word_to_idx, embedding):
 
     gold_scores, computed_scores = [], []
     for term_1, term_2, gold_score in read_men3000(filename):
-        idx_1, idx_2 = word_to_idx.get(term_1, torch.tensor(1)), word_to_idx.get(term_2, torch.tensor(1))
-        idx_1, idx_2 = idx_1.to("cuda"), idx_2.to("cuda")
+        UNK_idx = word_to_idx["UNK"]
+        idx_1, idx_2 = word_to_idx.get(term_1, UNK_idx), word_to_idx.get(term_2, UNK_idx)
+        idx_1, idx_2 = torch.tensor(idx_1.index, device=torch.device("cuda")), \
+                       torch.tensor(idx_2.index, device=torch.device("cuda"))
         vector_1, vector_2 = embedding(idx_1), embedding(idx_2)
         computed_score = cosine_similarity(vector_1, vector_2)
         gold_scores.append(gold_score)
